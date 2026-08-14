@@ -247,7 +247,10 @@ details.section > .section-body { padding: 0 16px 14px; }
 .grid .corner { background: none; }
 .grid .dayhead {
   position: sticky;
-  top: 0;                      /* edit view overrides via JS to sit below the brush bar */
+  /* Inside the horizontal scroll wrapper a top offset would push the header
+     down over the first row, so small screens pin at 0. Wide screens lift
+     the overflow containment (below) and sit below the brush bar instead. */
+  top: 0;
   z-index: 4;
   background: var(--card);
   text-align: center;
@@ -411,4 +414,11 @@ details.section > .section-body { padding: 0 16px 14px; }
 @media (min-width: 600px) {
   .cell, .hcell { min-height: 26px; }
   .brush { font-size: 0.9rem; }
+}
+
+@media (min-width: 700px) {
+  /* Wide screens: the grid fits, so drop the scroll containment — sticky
+     day headers can then track the viewport and sit below the brush bar. */
+  .grid-scroll { overflow-x: visible; }
+  .grid .dayhead { top: var(--dayhead-top, 0); }
 }
