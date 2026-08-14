@@ -88,11 +88,24 @@ npm run build
 
 ## Deployment
 
-- **Vercel** project `gotime` (files-based deploys; production URL above).
-  To enable git-push deploys instead, connect this repo in the Vercel
-  dashboard (Project → Settings → Git) and set the root directory to `app`.
+- **Vercel** project `gotime` (production URL above). Deploys build from this
+  repo once the Vercel GitHub app has access to it — see the one-time setup
+  below. Root directory: `app` (zero-config Vite build).
 - **Supabase** project `gotime` (`huahyyikgfqhficrdhbd`, free tier). Apply
   new migrations from `supabase/migrations/` via the SQL editor or MCP tools.
+
+### One-time setup: connect the repo to Vercel
+
+The Vercel GitHub integration currently has access to `khomas_model` but not
+this repository, so the full app cannot deploy until access is granted:
+
+1. In Vercel: **Add New → Project → Import Git Repository**. If `gotime`
+   isn't listed, click **Adjust GitHub App Permissions** and grant the Vercel
+   app access to `local-government-revenue-initiative/gotime`.
+2. Import the repo into the **existing `gotime` project** (or a new one),
+   setting **Root Directory** to `app`. Framework auto-detects as Vite.
+3. Pushes to the default branch then deploy to production automatically;
+   other branches get preview URLs.
 
 ### One-time auth setup (magic links)
 
