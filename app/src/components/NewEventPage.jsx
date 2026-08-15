@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout.jsx';
 import AuthPanel from './AuthPanel.jsx';
-import QuestionEditor from './QuestionEditor.jsx';
+import QuestionEditor, { parseOptionsText } from './QuestionEditor.jsx';
+import DateMultiPicker from './DateMultiPicker.jsx';
 import { useSession } from '../App.jsx';
 import { createEvent } from '../api.js';
 import { friendlyError } from '../supabaseClient.js';
-import { QUICK_ZONES, allZones, detectZone } from '../lib/timezones.js';
+import { QUICK_ZONES, allZones, detectZone, displayZoneName } from '../lib/timezones.js';
 import { useToast } from '../hooks.jsx';
 import { DateTime } from 'luxon';
 
@@ -20,7 +21,6 @@ export default function NewEventPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dates, setDates] = useState([]);
-  const [dateInput, setDateInput] = useState('');
   const [timezone, setTimezone] = useState(detectZone());
   const [slotMinutes, setSlotMinutes] = useState(30);
   const [dayStart, setDayStart] = useState('08:00');
@@ -33,13 +33,6 @@ export default function NewEventPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  function addDate(value) {
-    const v = value || dateInput;
-    if (!v) return;
-    if (!dates.includes(v)) setDates([...dates, v].sort());
-    setDateInput('');
-  }
-
   async function submit(e) {
     e.preventDefault();
     if (!title.trim()) return setError('Give the event a title.');
@@ -48,9 +41,9 @@ export default function NewEventPage() {
     const cleanLevels = levels.map((l) => l.trim()).filter(Boolean);
     if (cleanLevels.length < 2) return setError('Keep at least two preference levels.');
     const cleanQuestions = questions
-      .map((q) => ({ ...q, label: q.label.trim() }))
+      .map((q) => ({ ...q, label: q.label.trim(), options: parseOptionsText(q.optionsText) }))
       .filter((q) => q.label)
-      .filter((q) => q.type === 'text' || (q.options || []).length >= 2);
+      .filter((q) => q.type === 'text' || q.options.length >= 2);
 
     setBusy(true);
     setError('');
@@ -110,7 +103,7 @@ export default function NewEventPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Regional partners planning call"
+              placeholder="e.g. Project Team Meeting"
               maxLength={140}
               required
             />
@@ -128,22 +121,11 @@ export default function NewEventPage() {
         </div>
 
         <div className="card">
-          <h2>Candidate dates <span className="req">*</span></h2>
-          <p className="hint">Add every date the event could take place on.</p>
-          <div className="add-date-row">
-            <label htmlFor="ev-date" style={{ fontWeight: 400 }}>
-              <input
-                id="ev-date"
-                type="date"
-                value={dateInput}
-                min={DateTime.now().toISODate()}
-                onChange={(e) => {
-                  setDateInput(e.target.value);
-                  if (e.target.value) addDate(e.target.value);
-                }}
-              />
-            </label>
-          </div>
+          <h2>Potential Dates <span className="req">*</span></h2>
+          <p className="hint">
+            Click dates to add or remove them — you can also drag across several days.
+          </p>
+          <DateMultiPicker value={dates} onChange={setDates} />
           {dates.length > 0 && (
             <ul className="date-list">
               {dates.map((d) => (
@@ -156,17 +138,14 @@ export default function NewEventPage() {
               ))}
             </ul>
           )}
-          <label htmlFor="ev-tz">
-            Event time zone
-            <select id="ev-tz" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-              {!allZones().includes(timezone) && <option value={timezone}>{timezone}</option>}
-              {allZones().map((z) => (
-                <option key={z} value={z}>
-                  {z.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div style={{ margin: '12px 0 0' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone for organizer</span>
+            <p className="hint" style={{ margin: '2px 0 6px' }}>
+              The daily range of available times (set below) is interpreted in this zone.
+              Respondents can view the grid in their own time zone.
+            </p>
+            <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Commonly used time zones</p>
+          </div>
           <div className="chip-row">
             {QUICK_ZONES.map((q) => (
               <button
@@ -180,10 +159,24 @@ export default function NewEventPage() {
               </button>
             ))}
           </div>
-          <p className="hint">
-            The daily time range below is interpreted in this zone. Respondents can view the grid
-            in their own time zone.
-          </p>
+          <label htmlFor="ev-tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 0' }}>
+            Full time zone list
+            <select
+              id="ev-tz-select"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              style={{ fontWeight: 400 }}
+            >
+              {!allZones().includes(timezone) && (
+                <option value={timezone}>{displayZoneName(timezone)}</option>
+              )}
+              {allZones().map((z) => (
+                <option key={z} value={z}>
+                  {displayZoneName(z)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <details className="section">
@@ -219,8 +212,10 @@ export default function NewEventPage() {
           </summary>
           <div className="section-body">
             <p className="hint">
-              Respondents paint each time slot with one of these. The first level always means
-              “can’t make it”; the last is the best. 2–6 levels.
+              Respondents indicate their availability/preference for time slots using the
+              following options. You can customize the number and text of the options. The first
+              level always means “Not available”; the last level is for the respondent&rsquo;s
+              most preferred time slots.
             </p>
             {levels.map((l, i) => (
               <div key={i} className="q-head" style={{ display: 'flex', gap: 8, margin: '6px 0' }}>
@@ -286,9 +281,9 @@ export default function NewEventPage() {
                 onChange={(e) => setResponsesVisible(e.target.checked)}
               />
               <label htmlFor="ev-visible" style={{ margin: 0, fontWeight: 400 }}>
-                Respondents can see each other’s availability
+                Respondents can see each other’s responses
                 <span className="sub">
-                  Contact details (email, phone) are only ever visible to organizers either way.
+                  Only organizers can see contact details (email, phone).
                 </span>
               </label>
             </div>

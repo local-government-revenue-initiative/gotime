@@ -30,10 +30,7 @@ export default function LandingPage() {
     <Layout narrow>
       <div className="card">
         <h1>Find a time that works for everyone</h1>
-        <p>
-          Propose dates, share one link, and let people paint the times that suit them —
-          across time zones, with no account needed to respond.
-        </p>
+        <p>Propose dates, share one link, and let people select the times that suit them.</p>
         <button className="btn btn-primary btn-wide" type="button" onClick={() => navigate('/new')}>
           Create an event
         </button>

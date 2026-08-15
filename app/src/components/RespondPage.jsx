@@ -268,7 +268,7 @@ export default function RespondPage() {
             <>
               <h2>Add your availability</h2>
               <p className="hint">
-                No account needed — enter your name, paint the times that work, and save.
+                No account needed — enter your name, select the times that work, and save.
               </p>
               <button
                 type="button"
@@ -425,8 +425,8 @@ export default function RespondPage() {
       <div className="card">
         <h2>Your availability</h2>
         <p className="hint">
-          Pick a level below, then tap or drag across the grid. Everything starts as
-          “{levels[0]}”, so you only paint the times that could work.
+          Pick an option below, then tap or drag across the grid. Everything starts as
+          “{levels[0]}”, so you only select the times that could work.
         </p>
         <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
         {drift && (

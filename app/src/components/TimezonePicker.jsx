@@ -1,5 +1,5 @@
 import React from 'react';
-import { QUICK_ZONES, allZones, zoneLabel, zoneOffsetLabel } from '../lib/timezones.js';
+import { QUICK_ZONES, allZones, zoneLabel, zoneOffsetLabel, displayZoneName } from '../lib/timezones.js';
 
 /**
  * Primary display zone (quick chips + full IANA list) and, optionally, up to
@@ -15,18 +15,10 @@ export default function TimezonePicker({ zone, onZone, extras = [], onExtras, al
 
   return (
     <div>
-      <label htmlFor="tz-select">
-        Show times in
-        <select id="tz-select" value={zone} onChange={(e) => onZone(e.target.value)}>
-          {!zones.includes(zone) && <option value={zone}>{zone}</option>}
-          {zones.map((z) => (
-            <option key={z} value={z}>
-              {z.replace(/_/g, ' ')}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="chip-row" role="group" aria-label="Common time zones">
+      <p className="hint" style={{ fontWeight: 600, margin: '8px 0 2px' }}>
+        Show times in — commonly used time zones
+      </p>
+      <div className="chip-row" role="group" aria-label="Commonly used time zones">
         {QUICK_ZONES.map((q) => (
           <button
             key={q.zone}
@@ -40,6 +32,22 @@ export default function TimezonePicker({ zone, onZone, extras = [], onExtras, al
           </button>
         ))}
       </div>
+      <label htmlFor="tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 0' }}>
+        Full time zone list
+        <select
+          id="tz-select"
+          value={zone}
+          onChange={(e) => onZone(e.target.value)}
+          style={{ fontWeight: 400 }}
+        >
+          {!zones.includes(zone) && <option value={zone}>{displayZoneName(zone)}</option>}
+          {zones.map((z) => (
+            <option key={z} value={z}>
+              {displayZoneName(z)}
+            </option>
+          ))}
+        </select>
+      </label>
       {allowExtras && (
         <details className="section" style={{ boxShadow: 'none' }}>
           <summary>

@@ -213,7 +213,7 @@ export default function AvailabilityGrid({
                     style={
                       s.score > 0
                         ? {
-                            background: `rgba(76, 175, 109, ${0.15 + 0.85 * frac})`,
+                            background: `rgba(71, 191, 175, ${0.15 + 0.85 * frac})`,
                             color: frac > 0.6 ? '#fff' : undefined,
                           }
                         : undefined

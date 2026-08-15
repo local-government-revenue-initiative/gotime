@@ -1,6 +1,6 @@
 {
   "name": "gotime",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource/mulish": "^5.1.0",
     "@supabase/supabase-js": "^2.111.0",
     "luxon": "^3.5.0",
     "react": "^18.3.1",

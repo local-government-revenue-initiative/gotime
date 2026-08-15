@@ -2,8 +2,20 @@ import React from 'react';
 
 /**
  * Editor for organizer-defined poll questions.
- * value: [{ type: 'single'|'multi'|'text', label, options: [..], required }]
+ * value: [{ type: 'single'|'multi'|'text', label, optionsText, required }]
+ *
+ * optionsText is the raw textarea content, kept verbatim while typing —
+ * parsing it into an options array happens only when the form is saved
+ * (parseOptionsText). Normalizing on every keystroke made it impossible to
+ * type spaces or press Enter.
  */
+export function parseOptionsText(text) {
+  return String(text || '')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+}
 export default function QuestionEditor({ value, onChange }) {
   function update(i, patch) {
     const next = value.slice();
@@ -56,12 +68,8 @@ export default function QuestionEditor({ value, onChange }) {
               Options (one per line)
               <textarea
                 rows={3}
-                value={(q.options || []).join('\n')}
-                onChange={(e) =>
-                  update(i, {
-                    options: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 20),
-                  })
-                }
+                value={q.optionsText ?? ''}
+                onChange={(e) => update(i, { optionsText: e.target.value })}
                 placeholder={'In person\nOnline'}
               />
             </label>
@@ -101,7 +109,7 @@ export default function QuestionEditor({ value, onChange }) {
       <button
         type="button"
         className="btn"
-        onClick={() => onChange([...value, { type: 'single', label: '', options: [], required: false }])}
+        onClick={() => onChange([...value, { type: 'single', label: '', optionsText: '', required: false }])}
       >
         + Add a question
       </button>

@@ -18,6 +18,15 @@ export const QUICK_ZONES = [
   { zone: 'Africa/Nairobi', label: 'Nairobi/Kampala (EAT)' },
 ];
 
+/**
+ * Full display name for dropdown lists. IANA spells the continent "America",
+ * which reads as the US to many people; "Americas" is unambiguous. Display
+ * only — the underlying IANA ids are unchanged.
+ */
+export function displayZoneName(zone) {
+  return String(zone).replace(/^America\//, 'Americas/').replace(/_/g, ' ');
+}
+
 /** Short display name for a zone: quick-zone label, else "Region/City" tail. */
 export function zoneLabel(zone) {
   const quick = QUICK_ZONES.find((q) => q.zone === zone);

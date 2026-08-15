@@ -246,7 +246,7 @@ export default function ResultsPage() {
                 </h3>
                 <p className="hint" style={{ margin: '2px 0 6px' }}>
                   {painted.length === 0
-                    ? 'No available times painted.'
+                    ? 'No available times selected.'
                     : `${painted.length} slot${painted.length === 1 ? '' : 's'} marked available.`}
                 </p>
                 {painted.length > 0 && (

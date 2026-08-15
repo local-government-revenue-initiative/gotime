@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import Layout from './Layout.jsx';
 import AuthPanel from './AuthPanel.jsx';
 import EventHeader from './EventHeader.jsx';
-import QuestionEditor from './QuestionEditor.jsx';
+import QuestionEditor, { parseOptionsText } from './QuestionEditor.jsx';
 import OrganizerSearch from './OrganizerSearch.jsx';
 import { useSession } from '../App.jsx';
 import { useEvent, useToast } from '../hooks.jsx';
@@ -184,7 +184,7 @@ export default function ManagePage() {
                 type="button"
                 aria-label={`Remove ${d.date}`}
                 onClick={async () => {
-                  if (!window.confirm(`Remove ${d.date}? Availability already painted on this date stays stored but is no longer shown.`)) return;
+                  if (!window.confirm(`Remove ${d.date}? Availability already entered for this date stays stored but is no longer shown.`)) return;
                   await removeEventDate(d.id).catch((err) => showToast(friendlyError(err)));
                   reload();
                 }}
@@ -381,7 +381,7 @@ function SettingsForm({ event, busy, onSave }) {
           onChange={(e) => setResponsesVisible(e.target.checked)}
         />
         <label htmlFor="st-visible" style={{ margin: 0, fontWeight: 400 }}>
-          Respondents can see each other’s availability
+          Respondents can see each other’s responses
         </label>
       </div>
       {responsesVisible && (
@@ -420,7 +420,9 @@ function SettingsForm({ event, busy, onSave }) {
 }
 
 function ManagedQuestions({ eventId, questions, onSaved, onError }) {
-  const [draft, setDraft] = useState(questions.map((q) => ({ ...q })));
+  const [draft, setDraft] = useState(
+    questions.map((q) => ({ ...q, optionsText: (q.options || []).join('\n') })),
+  );
   const [busy, setBusy] = useState(false);
   return (
     <div>
@@ -437,9 +439,9 @@ function ManagedQuestions({ eventId, questions, onSaved, onError }) {
           setBusy(true);
           try {
             const clean = draft
-              .map((q) => ({ ...q, label: q.label.trim() }))
+              .map((q) => ({ ...q, label: q.label.trim(), options: parseOptionsText(q.optionsText) }))
               .filter((q) => q.label)
-              .filter((q) => q.type === 'text' || (q.options || []).length >= 2);
+              .filter((q) => q.type === 'text' || q.options.length >= 2);
             await replaceQuestions(eventId, clean);
             onSaved();
           } catch (err) {
