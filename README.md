@@ -3,7 +3,7 @@
 A tool for finding a time for meetings — across time zones, with no account
 needed to respond.
 
-**Live app:** https://gotime-kappa.vercel.app
+**Live app:** https://its-go-time.vercel.app
 
 Organizers create an event (title, candidate dates, timeslot size, optional
 extra questions), share one link, and respondents paint the times that work
@@ -110,8 +110,8 @@ this repository, so the full app cannot deploy until access is granted:
 ### One-time auth setup (magic links)
 
 In the Supabase dashboard → Authentication → URL Configuration:
-1. Set **Site URL** to `https://gotime-kappa.vercel.app`
-2. Add **Redirect URLs**: `https://gotime-kappa.vercel.app/**` and
+1. Set **Site URL** to `https://its-go-time.vercel.app`
+2. Add **Redirect URLs**: `https://its-go-time.vercel.app/**` and
    `http://localhost:5173/**`
 
 Without this, sign-in emails redirect to the default localhost URL.
