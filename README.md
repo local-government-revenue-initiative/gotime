@@ -123,8 +123,33 @@ Without this, sign-in emails redirect to the default localhost URL.
 - Built-in auth email is rate-limited (a few per hour) — fine for organizer
   sign-ins; connect custom SMTP (e.g. Resend) if that ever binds.
 
+### Email notifications (organizers)
+
+Each event has a `notify_mode` (Off / New responses only / New responses and
+edits, default "new"), chosen on the create-event and Manage pages. A trigger
+on `responses` calls the `notify-organizers` Edge Function (via `pg_net`),
+which emails every organizer of the event through [Resend](https://resend.com).
+It stays dormant until Resend is configured, so nothing breaks before setup.
+
+One-time setup:
+1. Create a Resend account and verify a sending domain (e.g. `evan-trowbridge.com`)
+   by adding the DNS records Resend shows (SPF/DKIM). Create an API key.
+2. In the Supabase dashboard → Edge Functions → Secrets, add:
+   - `RESEND_API_KEY` — the Resend API key
+   - `NOTIFY_FROM` — e.g. `GoTime <notifications@evan-trowbridge.com>`
+   - `NOTIFY_SECRET` — must equal `private.config.notify_secret` in the DB
+   - `APP_ORIGIN` (optional) — `https://its-go-time.vercel.app`
+3. The `notify-organizers` function and the DB trigger are already deployed
+   (`supabase/functions/notify-organizers/`, migration `20260816120000_notifications.sql`).
+
+### Calendar
+
+Each slot on the results page offers "Add to Google Calendar", "Add to
+Outlook", and a `.ics` download (`googleCalUrl` / `outlookCalUrl` / `buildICS`
+in `app/src/lib/ics.js`). No account linking or OAuth is involved.
+
 ### Possible next steps (schema already supports them)
 
-- Email the organizer on new responses: Supabase Edge Function + Resend,
-  triggered by a database webhook on `responses`.
-- Google/Outlook calendar linking (the .ics download covers the core need).
+- Daily-digest notification mode (needs a scheduled `pg_cron`/edge job).
+- Notifications for new comments and date suggestions (same trigger pattern).
+- Full Google/Outlook calendar-account linking to read busy times (large; OAuth).
