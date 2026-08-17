@@ -34,6 +34,7 @@ export default function AvailabilityGrid({
   selectedKey,
   onSelectSlot,
   dateMeta = {},
+  busyKeys = null,
 }) {
   const gridRef = useRef(null);
   const brushBarRef = useRef(null);
@@ -184,14 +185,17 @@ export default function AvailabilityGrid({
                 if (mode === 'edit') {
                   const v = Number(availability?.[key]) || 0;
                   const c = levelColor(v, nLevels);
+                  const busy = busyKeys?.has(key);
                   return (
                     <button
                       key={'c' + ci}
                       type="button"
                       data-key={key}
-                      className={'cell' + (c.striped ? ' striped' : '') + hourClass}
+                      className={
+                        'cell' + (c.striped ? ' striped' : '') + hourClass + (busy ? ' busy' : '')
+                      }
                       style={{ backgroundColor: c.bg }}
-                      aria-label={`${formatSlotInZone(key, zoneList[0])}: ${levels[v]}`}
+                      aria-label={`${formatSlotInZone(key, zoneList[0])}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();

@@ -9,9 +9,10 @@ import TimezonePicker from './TimezonePicker.jsx';
 import Comments from './Comments.jsx';
 import { useSession } from '../App.jsx';
 import { useEvent, useToast } from '../hooks.jsx';
-import { saveResponse, suggestDate } from '../api.js';
+import { saveResponse, suggestDate, getMyProfile, updateMyIcsUrl, fetchMyCalendarIcs } from '../api.js';
+import { parseBusyRanges, busySlotKeys } from '../lib/icsParse.js';
 import { friendlyError } from '../supabaseClient.js';
-import { buildSlotGrid, zoneLabelDrift } from '../lib/slots.js';
+import { buildSlotGrid, zoneLabelDrift, parseSlotKey } from '../lib/slots.js';
 import { detectZone, zoneLabel } from '../lib/timezones.js';
 import {
   getMyResponseId,
@@ -61,6 +62,14 @@ export default function RespondPage() {
   );
   const isDayMode = event?.granularity === 'day';
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
+
+  // "Show my busy times": the signed-in user's own published calendar,
+  // overlaid on the grid as a visual aid. Never saved, never shown to others.
+  const [busyRanges, setBusyRanges] = useState(null);
+  const busyKeys = useMemo(() => {
+    if (!busyRanges || !grid || isDayMode) return null;
+    return busySlotKeys(grid.allKeys, busyRanges, event.slot_minutes, parseSlotKey);
+  }, [busyRanges, grid, isDayMode, event?.slot_minutes]);
   const drift = useMemo(
     () => (grid ? zones.some((z) => zoneLabelDrift(grid, z)) : false),
     [grid, zones.join('|')],
@@ -458,6 +467,14 @@ export default function RespondPage() {
           />
         ) : (
           <>
+            {session && (
+              <MyCalendar
+                grid={grid}
+                onBusy={setBusyRanges}
+                busyRanges={busyRanges}
+                showToast={showToast}
+              />
+            )}
             <AvailabilityGrid
               mode="edit"
               grid={grid}
@@ -467,9 +484,17 @@ export default function RespondPage() {
               onPaint={event.locked ? () => {} : paint}
               brush={brush}
               setBrush={setBrush}
+              busyKeys={busyKeys}
             />
             <p className="hint">
               Times shown in {zoneLabel(zone)}. The event’s own time zone is {event.timezone}.
+              {busyKeys && busyKeys.size > 0 && (
+                <>
+                  {' '}
+                  <span className="busy-legend" /> = busy in your calendar ({busyKeys.size} slot
+                  {busyKeys.size === 1 ? '' : 's'}).
+                </>
+              )}
             </p>
           </>
         )}
@@ -637,5 +662,114 @@ function SuggestDate({ token, onSuggested, showToast, pending }) {
         </label>
       </div>
     </div>
+  );
+}
+
+/**
+ * "My calendar" — a signed-in user can paste the public ICS link their
+ * calendar app publishes, and GoTime shades the slots they're already busy.
+ * Purely an aid while answering: it never changes what gets saved, and the
+ * link is stored only on that user's own profile row (nobody else can read
+ * it, organizers included).
+ */
+function MyCalendar({ grid, onBusy, busyRanges, showToast }) {
+  const [url, setUrl] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusyState] = useState(false);
+  const [error, setError] = useState('');
+
+  // Load any saved URL once.
+  useEffect(() => {
+    let cancelled = false;
+    getMyProfile()
+      .then((p) => {
+        if (!cancelled) {
+          setUrl(p?.ics_url || '');
+          setLoaded(true);
+        }
+      })
+      .catch(() => !cancelled && setLoaded(true));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const shown = Boolean(busyRanges);
+
+  async function showBusy() {
+    setBusyState(true);
+    setError('');
+    try {
+      const trimmed = url.trim();
+      if (trimmed) await updateMyIcsUrl(trimmed);
+      const ics = await fetchMyCalendarIcs(trimmed || undefined);
+      // Only expand recurrence across the window this event covers.
+      const keys = grid.allKeys;
+      const first = parseSlotKey(keys[0]).minus({ days: 1 });
+      const last = parseSlotKey(keys[keys.length - 1]).plus({ days: 2 });
+      const ranges = parseBusyRanges(ics, first, last);
+      onBusy(ranges);
+      showToast(
+        ranges.length
+          ? `Found ${ranges.length} calendar event${ranges.length === 1 ? '' : 's'} in this period.`
+          : 'No calendar events in this period — nothing to shade.',
+      );
+    } catch (err) {
+      setError(friendlyError(err));
+      onBusy(null);
+    } finally {
+      setBusyState(false);
+    }
+  }
+
+  return (
+    <details className="section" style={{ boxShadow: 'none' }}>
+      <summary>
+        My calendar
+        <span className="sub">
+          {shown ? 'busy times shown on the grid' : 'optionally shade times you’re already busy'}
+        </span>
+      </summary>
+      <div className="section-body">
+        <p className="hint">
+          Paste the <strong>published ICS link</strong> from your Outlook or Google calendar and
+          GoTime will mark the slots you’re busy. Only you ever see this — it isn’t saved with your
+          response, and nobody else (organizers included) can see your calendar or the link.
+        </p>
+        <label htmlFor="ics-url">
+          Published calendar link (ICS)
+          <input
+            id="ics-url"
+            type="url"
+            value={url}
+            placeholder="https://outlook.office365.com/owa/calendar/.../calendar.ics"
+            onChange={(e) => setUrl(e.target.value)}
+          />
+        </label>
+        {error && <div className="banner banner-error">{error}</div>}
+        <button
+          type="button"
+          className="btn"
+          onClick={showBusy}
+          disabled={busy || !loaded || !url.trim()}
+        >
+          {busy ? 'Loading…' : shown ? 'Refresh my busy times' : 'Show my busy times'}
+        </button>
+        {shown && (
+          <button
+            type="button"
+            className="btn btn-small"
+            style={{ marginLeft: 8 }}
+            onClick={() => onBusy(null)}
+          >
+            Hide
+          </button>
+        )}
+        <p className="hint">
+          Repeating meetings are handled for common weekly/daily patterns; unusual repeat rules may
+          not appear. Times come from your calendar as published.
+        </p>
+      </div>
+    </details>
   );
 }

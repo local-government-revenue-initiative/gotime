@@ -236,6 +236,40 @@ export async function getMyProfile() {
   return unwrap(await supabase.from('profiles').select('*').eq('id', uid).maybeSingle());
 }
 
+/** Save (or clear) this user's own published-calendar ICS URL. */
+export async function updateMyIcsUrl(icsUrl) {
+  const supabase = await client();
+  const { data } = await supabase.auth.getUser();
+  const uid = data?.user?.id;
+  if (!uid) throw new Error('not_authenticated');
+  unwrap(await supabase.from('profiles').update({ ics_url: icsUrl.trim() }).eq('id', uid));
+}
+
+/**
+ * Fetch this user's published calendar via the fetch-ics edge function
+ * (browsers can't request Outlook/Google ICS URLs directly). Pass a url to
+ * preview one before saving; omit it to use the saved one.
+ * Returns the raw ICS text.
+ */
+export async function fetchMyCalendarIcs(url) {
+  const supabase = await client();
+  const { data, error } = await supabase.functions.invoke('fetch-ics', {
+    body: url ? { url } : {},
+  });
+  if (error) {
+    // Edge errors carry the reason in the response body.
+    let detail = '';
+    try {
+      detail = (await error.context?.json())?.error || '';
+    } catch {
+      /* not json */
+    }
+    throw new Error(detail || error.message || 'fetch_failed');
+  }
+  if (!data?.ics) throw new Error(data?.error || 'fetch_failed');
+  return data.ics;
+}
+
 export async function updateMyDisplayName(displayName) {
   const supabase = await client();
   const { data } = await supabase.auth.getUser();

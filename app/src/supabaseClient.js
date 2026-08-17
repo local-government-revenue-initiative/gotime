@@ -68,5 +68,18 @@ export function friendlyError(error) {
     return 'This event could not be found — check that the link is complete.';
   if (/not_organizer/i.test(message))
     return 'Only an organizer of this event can do that.';
+  // Calendar overlay (fetch-ics edge function)
+  if (/host_not_allowed/i.test(message))
+    return 'That link isn’t a published Outlook or Google calendar. Copy the ICS link from your calendar’s publish/share settings.';
+  if (/https_required|not_a_url/i.test(message))
+    return 'That doesn’t look like a valid calendar link — it should start with https://';
+  if (/not_a_calendar/i.test(message))
+    return 'That link didn’t return a calendar. Make sure you copied the ICS link, not the HTML one.';
+  if (/no_calendar_url/i.test(message))
+    return 'Add your published calendar link first.';
+  if (/calendar_too_large/i.test(message))
+    return 'That calendar is too large to load. Try publishing a shorter date range.';
+  if (/redirect_not_followed|calendar_http_error|fetch_failed/i.test(message))
+    return 'Could not load that calendar. Check the link is still published and try again.';
   return message;
 }

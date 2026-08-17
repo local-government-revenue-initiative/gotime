@@ -108,7 +108,7 @@ p { margin: 0.5em 0; }
 
 label { display: block; margin: 10px 0; font-weight: 600; font-size: 0.95rem; }
 input[type="text"], input[type="email"], input[type="tel"], input[type="number"],
-input[type="date"], input[type="time"], textarea, select {
+input[type="date"], input[type="time"], input[type="url"], textarea, select {
   display: block;
   width: 100%;
   margin-top: 4px;
@@ -362,6 +362,30 @@ details.section > .section-body { padding: 0 16px 14px; }
 }
 .cell.hourline, .timelabel.hourline { margin-top: 3px; }
 .cell.gap { visibility: hidden; }
+
+/* "busy in my calendar" marker — a corner wedge, so it reads on top of any
+   preference-level colour without competing with it. Display only. */
+.cell.busy::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-width: 0 10px 10px 0;
+  border-style: solid;
+  border-color: transparent var(--ink) transparent transparent;
+  opacity: 0.6;
+}
+.cell.busy { position: relative; }
+.busy-legend {
+  display: inline-block;
+  width: 0; height: 0;
+  border-width: 0 8px 8px 0;
+  border-style: solid;
+  border-color: transparent var(--ink) transparent transparent;
+  opacity: 0.55;
+  vertical-align: middle;
+  margin-right: 4px;
+}
 
 /* heatmap cells */
 .hcell {
