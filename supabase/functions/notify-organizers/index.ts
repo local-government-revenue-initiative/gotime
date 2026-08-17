@@ -69,14 +69,21 @@ Deno.serve(async (req) => {
     .single();
   const respondentName = response?.name ?? 'Someone';
 
-  // Organizer emails: event_organizers → profiles.email.
+  // Organizer emails: event_organizers → profiles.email. Two explicit
+  // queries because there is no direct FK between event_organizers and
+  // profiles for PostgREST to auto-embed (both reference auth.users).
   const { data: orgRows } = await supabase
     .from('event_organizers')
-    .select('user_id, profiles(email)')
+    .select('user_id')
     .eq('event_id', event_id);
-  const emails = (orgRows ?? [])
-    .map((r: { profiles?: { email?: string } | null }) => r.profiles?.email)
-    .filter((e): e is string => Boolean(e && e.includes('@')));
+  const userIds = (orgRows ?? []).map((r: { user_id: string }) => r.user_id);
+  let emails: string[] = [];
+  if (userIds.length) {
+    const { data: profs } = await supabase.from('profiles').select('email').in('id', userIds);
+    emails = (profs ?? [])
+      .map((p: { email?: string }) => p.email)
+      .filter((e): e is string => Boolean(e && e.includes('@')));
+  }
   if (emails.length === 0) return json({ ok: true, skipped: 'no_recipients' });
 
   const manageUrl = `${origin}/e/${event.token}/manage`;
@@ -102,6 +109,8 @@ Deno.serve(async (req) => {
     ),
   );
   const sent = results.filter((r) => r.status === 'fulfilled').length;
-  const failed = results.length - sent;
-  return json({ ok: true, sent, failed });
+  const errors = results
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => String(r.reason?.message ?? r.reason));
+  return json({ ok: true, sent, failed: errors.length, errors });
 });
