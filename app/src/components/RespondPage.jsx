@@ -11,6 +11,7 @@ import { useSession } from '../App.jsx';
 import { useEvent, useToast } from '../hooks.jsx';
 import { saveResponse, suggestDate, getMyProfile, updateMyIcsUrl, fetchMyCalendarIcs } from '../api.js';
 import { parseBusyRanges, busySlotKeys } from '../lib/icsParse.js';
+import { SHOW_CALENDAR_OVERLAY } from '../features.js';
 import { friendlyError } from '../supabaseClient.js';
 import { buildSlotGrid, zoneLabelDrift, parseSlotKey } from '../lib/slots.js';
 import { detectZone, zoneLabel } from '../lib/timezones.js';
@@ -467,7 +468,7 @@ export default function RespondPage() {
           />
         ) : (
           <>
-            {session && (
+            {SHOW_CALENDAR_OVERLAY && session && (
               <MyCalendar
                 grid={grid}
                 onBusy={setBusyRanges}

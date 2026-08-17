@@ -172,7 +172,14 @@ Each slot on the results page offers "Add to Google Calendar", "Add to
 Outlook", and a `.ics` download (`googleCalUrl` / `outlookCalUrl` / `buildICS`
 in `app/src/lib/ics.js`). No account linking or OAuth is involved.
 
-### Show my busy times (calendar overlay)
+### Show my busy times (calendar overlay) — built, currently hidden
+
+**Switched off** in `app/src/features.js` (`SHOW_CALENDAR_OVERLAY`), to keep the
+respondent's page as simple as possible while people learn the tool. Nothing is
+rendered, nothing is fetched, and no calendar link can be entered. To bring it
+back, either flip that default to `true`, or set
+`VITE_SHOW_CALENDAR_OVERLAY=1` in the Vercel project's environment variables
+and redeploy. Everything below still describes how it works when on.
 
 A **signed-in** respondent can paste the published ICS link from their Outlook
 or Google calendar in the "My calendar" section of a time-based event; the slots
