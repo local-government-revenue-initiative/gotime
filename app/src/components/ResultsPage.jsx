@@ -234,7 +234,7 @@ export default function ResultsPage() {
         <div className="card">
           <h2>Best times</h2>
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table best-times">
               <thead>
                 <tr>
                   <th>{isDayMode ? 'Which day' : `When (${zoneLabel(zone)})`}</th>

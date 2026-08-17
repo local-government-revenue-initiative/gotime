@@ -8,7 +8,7 @@
 // Required Edge Function secrets (set in the Supabase dashboard):
 //   NOTIFY_SECRET   — must match private.config.notify_secret
 //   RESEND_API_KEY  — a Resend API key (if unset, this no-ops: feature dormant)
-//   NOTIFY_FROM     — sender, e.g. 'GoTime <notifications@evan-trowbridge.com>'
+//   NOTIFY_FROM     — sender, e.g. 'Go Time <notifications@evan-trowbridge.com>'
 //   APP_ORIGIN      — optional, e.g. 'https://its-go-time.vercel.app' (for links)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   // Dormant until Resend is configured — succeed quietly so nothing errors.
   if (!resendKey) return json({ ok: true, skipped: 'resend_not_configured' });
 
-  const from = Deno.env.get('NOTIFY_FROM') ?? 'GoTime <notifications@example.com>';
+  const from = Deno.env.get('NOTIFY_FROM') ?? 'Go Time <notifications@example.com>';
   const origin = Deno.env.get('APP_ORIGIN') ?? 'https://its-go-time.vercel.app';
 
   let payload: { response_id?: string; event_id?: string; kind?: string };
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
   const subject = `${respondentName} ${verb} “${event.title}”`;
   const html =
     `<p><strong>${escapeHtml(respondentName)}</strong> ${verb} ` +
-    `<strong>${escapeHtml(event.title)}</strong> on GoTime.</p>` +
+    `<strong>${escapeHtml(event.title)}</strong> on Go Time.</p>` +
     `<p><a href="${manageUrl}">View responses and results</a></p>` +
     `<hr><p style="color:#888;font-size:12px">You receive this because you organize this event. ` +
     `Change notifications in the event's Manage page.</p>`;

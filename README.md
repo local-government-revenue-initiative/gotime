@@ -1,4 +1,4 @@
-# GoTime
+# Go Time
 
 A tool for finding a time for meetings — across time zones, with no account
 needed to respond.
@@ -60,10 +60,16 @@ app/                     Vite + React 18 (plain JS), react-router, Luxon
     slots.js             slot keys ("2026-09-03T13:30Z"), DST-safe grid math
     timezones.js         zone list/labels     aggregate.js  heatmap scoring
     ics.js               calendar invites     localIdentity.js  device continuity
+    icsParse.js          reads a published calendar (busy overlay)
     levelColors.js       colours for N preference levels
+    respondentFilter.js  include/exclude people on the results page
   src/components/        pages + AvailabilityGrid (edit/heatmap modes)
+  src/tokens.css         brand tokens — the source of truth for colour/type/etc.
+  src/features.js        switches for finished-but-hidden features
   src/api.js             every network call in one place
   src/supabaseClient.js  lazy Supabase client (publishable key, safe to commit)
+  public/                favicons, app icon, manifest, logo SVGs
+docs/                    the brand handoff, as delivered
 supabase/migrations/     schema, RLS policies, and respondent RPCs
 ```
 
@@ -75,6 +81,31 @@ event's unguessable share token and enforce locking, visibility,
 anonymization, and claimed-response protection server-side. The `anon` role
 has zero table grants. Respondent contact details never leave the server
 except to organizers.
+
+## Brand
+
+The identity — the "Grid" mark, the Go Time wordmark, the icons and the design
+tokens — comes from the handoff kept verbatim in `docs/brand-handoff.md` (with
+`docs/brand-tokens-as-delivered.css` as the tokens it shipped). How it is
+applied here:
+
+- **Tokens** live in `app/src/tokens.css` (`--gt-*`), unchanged from the handoff
+  except that Mulish is bundled locally via `@fontsource` instead of being
+  fetched from Google Fonts, so the app makes no third-party request and text
+  doesn't reflow mid-load. `styles.css` maps its own working variables onto
+  those tokens, so a token change moves the whole interface.
+- **Logo**: `app/src/components/BrandLockup.jsx` inlines the mark exactly as
+  drawn (its geometry and colours are fixed — never recolour, reorder or
+  animate the cells) and sets the wordmark as live text in the bundled Mulish.
+  The header mark is 28px, under the 30px threshold at which the handoff calls
+  for "Time" at weight 400 rather than 200. Full lockups for other uses are in
+  `app/public/brand/`.
+- **Icons**: the 2×2 icon variants ship at `app/public/` and are wired up in
+  `index.html` plus `manifest.webmanifest`, with `theme-color` `#1A2E5A`.
+- **Name**: always "Go Time", two words, sentence case — never "GoTime". The
+  repository, package and database keep the one-word `gotime` identifier.
+- **Voice**: plain, full sentences, sentence case, no emoji (the locked state
+  says "Locked" rather than showing a padlock).
 
 ## Development
 
@@ -136,7 +167,7 @@ One-time setup:
    by adding the DNS records Resend shows (SPF/DKIM). Create an API key.
 2. In the Supabase dashboard → Edge Functions → Secrets, add:
    - `RESEND_API_KEY` — the Resend API key
-   - `NOTIFY_FROM` — e.g. `GoTime <notifications@evan-trowbridge.com>`
+   - `NOTIFY_FROM` — e.g. `Go Time <notifications@evan-trowbridge.com>`
    - `NOTIFY_SECRET` — must equal `private.config.notify_secret` in the DB
    - `APP_ORIGIN` (optional) — `https://its-go-time.vercel.app`
 3. The `notify-organizers` function and the DB trigger are already deployed

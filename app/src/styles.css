@@ -1,35 +1,41 @@
-/* GoTime — mobile-first, clean neutral design.
+/* Go Time — mobile-first, clean neutral design.
    Grid/brush/save-bar interaction styles adapted from the earlier scheduler tool. */
 
-/* Palette follows the LoGRI brand guidelines (University Blue, Clear Blue,
-   Sea Turquoise, Sunny Yellow); Mulish substitutes for the brand's Avenir. */
+/* Every value here comes from the brand tokens in tokens.css; these names are
+   just the working vocabulary of this stylesheet, so a token change there
+   moves the whole interface. Two exceptions, noted inline: the error red and
+   the ink colours that have to sit on the availability-level fills, neither of
+   which the brand palette defines. */
 :root {
-  --bg: #f5f6f8;
-  --card: #ffffff;
-  --ink: #1e1b1d;            /* Off Black */
-  --heading: #1a2e5a;        /* University Blue */
-  --muted: #5b6875;
-  --line: #dde3ea;
-  --accent: #304d9b;         /* Clear Blue */
-  --accent-soft: #e6ebf7;
-  --accent-ink: #ffffff;
-  --danger: #b3362c;
-  --ok: #2c7a4b;
+  --bg: var(--gt-bg-sunken);
+  --card: var(--gt-white);
+  --ink: var(--gt-text-body);
+  --heading: var(--gt-text-strong);
+  --muted: var(--gt-text-muted);
+  --line: var(--gt-border);
+  --accent: var(--gt-link);
+  --accent-soft: var(--gt-blue-10);
+  --accent-ink: var(--gt-white);
+  --danger: #b3362c;         /* no brand token for errors */
+  --ok: var(--gt-green);
 
   /* availability states: 0 = not available, top = most convenient.
-     Middle levels get diagonal stripes so states read without colour. */
-  --state0: #e4e9ee;
-  --state0-ink: #7a8896;
-  --state-mid: #ffc70a;      /* Sunny Yellow */
-  --state-mid-ink: #5c4400;
-  --state-top: #47bfaf;      /* Sea Turquoise */
-  --state-top-ink: #0a2f2b;
+     Middle levels get diagonal stripes so states read without colour.
+     The unclaimed/claimed pairing mirrors the logo: open slots are Blue 10,
+     Sunny Yellow and Sea Turquoise are votes cast. */
+  --state0: var(--gt-blue-10);
+  --state0-ink: var(--gt-blue-60);
+  --state-mid: var(--gt-yellow);
+  --state-mid-ink: #5c4400;  /* legible ink on Sunny Yellow */
+  --state-top: var(--gt-turquoise);
+  --state-top-ink: #0a2f2b;  /* legible ink on Sea Turquoise */
 
-  --font-head: 'Mulish', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Mulish', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-head: var(--gt-font);
+  --font-body: var(--gt-font);
 
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(16, 32, 48, 0.08);
+  --radius: var(--gt-radius-card);
+  --radius-control: var(--gt-radius-control);
+  --shadow: var(--gt-shadow-sm);
 }
 
 * { box-sizing: border-box; }
@@ -68,15 +74,29 @@ p { margin: 0.5em 0; }
   align-items: center;
   gap: 12px;
 }
+/* Brand lockup: the mark, then the wordmark as live text so it uses the
+   bundled Mulish. Mark 28px, wordmark 0.68× that (19px), gap 0.32× (9px), all
+   per the brand handoff — and because the mark is under 30px, "Time" is set at
+   weight 400 rather than 200 so the light weight doesn't disappear. The
+   header's own padding provides the required clear space (one cell, 7px). */
 .site-header .brand {
-  font-family: var(--font-head);
-  font-weight: 800;
-  font-size: 1.15rem;
-  color: var(--heading);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   text-decoration: none;
-  letter-spacing: -0.01em;
+  color: var(--heading);
 }
-.site-header .brand span { color: var(--state-top); }
+.site-header .brand .mark { display: block; width: 28px; height: 28px; }
+.site-header .brand .wordmark {
+  font-family: var(--font-head);
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: var(--gt-tracking-display);
+  color: var(--gt-blue);
+  white-space: nowrap;
+}
+.site-header .brand .wordmark .go { font-weight: var(--gt-weight-logo); }
+.site-header .brand .wordmark .time { font-weight: var(--gt-weight-body); }
 .site-header .spacer { flex: 1; }
 .site-header .who { font-size: 0.85rem; color: var(--muted); max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -86,7 +106,7 @@ p { margin: 0.5em 0; }
 .event-tabs { display: flex; gap: 6px; margin: 12px 0 2px; flex-wrap: wrap; }
 .event-tabs a {
   padding: 7px 14px;
-  border-radius: 20px;
+  border-radius: var(--gt-radius-pill);
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink);
@@ -116,14 +136,28 @@ input[type="date"], input[type="time"], input[type="url"], textarea, select {
   font: inherit;
   font-weight: 400;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: #fff;
   color: var(--ink);
 }
-input:focus, textarea:focus, select:focus, button:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+/* Brand focus ring: a blue halo rather than a hard outline. */
+input:focus-visible, textarea:focus-visible, select:focus-visible,
+button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: none;
+  box-shadow: var(--gt-shadow-focus);
 }
+input:focus, textarea:focus, select:focus { box-shadow: var(--gt-shadow-focus); }
+/* Question groups: the browser's default fieldset chrome is the one thing on
+   these pages that ignores the design system, so give it the card treatment. */
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 4px 12px 10px;
+  margin: 12px 0;
+  min-width: 0;
+}
+legend { font-weight: 600; font-size: 0.95rem; padding: 0 4px; color: var(--ink); }
+
 .checkbox, .radio {
   display: flex; align-items: flex-start; gap: 8px;
   font-weight: 400; margin: 8px 0;
@@ -155,12 +189,15 @@ details.section > .section-body { padding: 0 16px 14px; }
 .btn {
   font: inherit;
   padding: 10px 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
   cursor: pointer;
+  transition: filter var(--gt-transition), transform var(--gt-transition);
 }
+/* Brand motion: darken on hover, 1px down on press. No bounces. */
+.btn:hover:not(:disabled) { filter: brightness(0.92); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: default; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -188,7 +225,7 @@ details.section > .section-body { padding: 0 16px 14px; }
 .chip {
   font: inherit; font-size: 0.85rem;
   padding: 5px 12px;
-  border-radius: 20px;
+  border-radius: var(--gt-radius-pill);
   border: 1px solid var(--line);
   background: #fff;
   cursor: pointer;
@@ -201,7 +238,7 @@ details.section > .section-body { padding: 0 16px 14px; }
   display: flex; align-items: center; gap: 6px;
   background: var(--accent-soft);
   border: 1px solid #b9cef5;
-  border-radius: 20px;
+  border-radius: var(--gt-radius-pill);
   padding: 4px 6px 4px 12px;
   font-size: 0.9rem;
 }
@@ -233,7 +270,7 @@ details.section > .section-body { padding: 0 16px 14px; }
 .cal-weekday { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 2px 0; }
 .cal-day {
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: none;
   font: inherit;
   padding: 8px 0;
@@ -257,7 +294,7 @@ details.section > .section-body { padding: 0 16px 14px; }
 .cal-day-lg {
   min-height: 46px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -291,7 +328,7 @@ details.section > .section-body { padding: 0 16px 14px; }
   font-size: 0.8rem;
   line-height: 1.2;
   padding: 8px 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 2px solid var(--line);
   cursor: pointer;
   background: #fff;
@@ -404,7 +441,7 @@ details.section > .section-body { padding: 0 16px 14px; }
 .slot-detail {
   margin-top: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 10px 12px;
   font-size: 0.92rem;
 }
@@ -416,8 +453,13 @@ details.section > .section-body { padding: 0 16px 14px; }
 .cal-links a, .cal-links .linklike { white-space: nowrap; }
 
 .badge {
-  display: inline-block; border-radius: 20px; padding: 1px 10px;
+  display: inline-block; border-radius: var(--gt-radius-pill); padding: 1px 10px;
   font-size: 0.82rem; font-weight: 600;
+}
+/* A word, not a padlock glyph — the brand voice carries no emoji. */
+.badge-locked {
+  background: var(--gt-blue-10); color: var(--gt-blue-80);
+  margin-left: 8px; font-weight: 600;
 }
 
 /* ---------- people / responses ---------- */
@@ -449,6 +491,12 @@ details.section > .section-body { padding: 0 16px 14px; }
   vertical-align: top;
 }
 .data-table th { font-size: 0.85rem; color: var(--muted); }
+/* The logo reads Sunny Yellow as the agreed slot; the leading option gets the
+   same cue, alongside the score that earns it. */
+.best-times tbody tr:first-child td:first-child {
+  box-shadow: inset 3px 0 0 var(--gt-yellow);
+  font-weight: 600;
+}
 
 /* comments */
 .comment { border-top: 1px solid var(--line); padding: 8px 2px; }
@@ -459,7 +507,7 @@ details.section > .section-body { padding: 0 16px 14px; }
 /* question editor rows */
 .q-row {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 10px 12px;
   margin: 8px 0;
 }
@@ -485,7 +533,7 @@ details.section > .section-body { padding: 0 16px 14px; }
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
   background: var(--card);
   border-top: 1px solid var(--line);
-  box-shadow: 0 -2px 8px rgba(16, 32, 48, 0.08);
+  box-shadow: 0 -2px 8px rgba(26, 46, 90, 0.08);
   z-index: 15;
 }
 .save-status { flex: 1; text-align: center; font-size: 0.88rem; color: var(--muted); }
@@ -499,7 +547,7 @@ details.section > .section-body { padding: 0 16px 14px; }
   background: var(--ink);
   color: #fff;
   padding: 10px 18px;
-  border-radius: 24px;
+  border-radius: var(--gt-radius-pill);
   font-size: 0.95rem;
   box-shadow: var(--shadow);
   z-index: 20;

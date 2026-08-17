@@ -668,7 +668,7 @@ function SuggestDate({ token, onSuggested, showToast, pending }) {
 
 /**
  * "My calendar" — a signed-in user can paste the public ICS link their
- * calendar app publishes, and GoTime shades the slots they're already busy.
+ * calendar app publishes, and Go Time shades the slots they're already busy.
  * Purely an aid while answering: it never changes what gets saved, and the
  * link is stored only on that user's own profile row (nobody else can read
  * it, organizers included).
@@ -734,7 +734,7 @@ function MyCalendar({ grid, onBusy, busyRanges, showToast }) {
       <div className="section-body">
         <p className="hint">
           Paste the <strong>published ICS link</strong> from your Outlook or Google calendar and
-          GoTime will mark the slots you’re busy. Only you ever see this — it isn’t saved with your
+          Go Time will mark the slots you’re busy. Only you ever see this — it isn’t saved with your
           response, and nobody else (organizers included) can see your calendar or the link.
         </p>
         <label htmlFor="ics-url">

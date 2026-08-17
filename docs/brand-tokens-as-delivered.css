@@ -1,0 +1,75 @@
+/* Go Time — brand tokens
+   Palette inherited from the parent institutional design system; Go Time uses it
+   as-is. Font: Mulish (Google Fonts) as a stand-in for Avenir LT. */
+@import url('https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200..900;1,200..900&display=swap');
+
+:root {
+  /* Brand primaries */
+  --gt-blue:      #1A2E5A; /* anchor: headings, nav, footer, icon field */
+  --gt-clear-blue:#304D9B; /* links */
+  --gt-green:     #009E47; /* eyebrows, success, accent buttons */
+  --gt-turquoise: #47BFAF; /* secondary accent */
+  --gt-yellow:    #FFC70A; /* highlight — the agreed slot */
+  --gt-off-black: #1E1B1D; /* body copy */
+  --gt-white:     #FFFFFF;
+
+  /* Blue tints (screened steps) */
+  --gt-blue-80: #484F73;
+  --gt-blue-60: #767C9B;
+  --gt-blue-40: #A3A8BC;
+  --gt-blue-20: #D1D4DE; /* "open slot" grey-blue in the mark */
+  --gt-blue-10: #E8E9EF;
+  --gt-blue-05: #F3F4F7; /* alternating section band */
+
+  /* Warm neutral ramp */
+  --gt-neutral-900:#1E1B1D; --gt-neutral-800:#353133; --gt-neutral-700:#4E4A4C;
+  --gt-neutral-600:#6B6769; --gt-neutral-500:#8C888A; --gt-neutral-400:#ABA8A9;
+  --gt-neutral-300:#CBC9CA; --gt-neutral-200:#E4E2E3; --gt-neutral-100:#F1F0F0;
+  --gt-neutral-050:#F8F7F7;
+
+  /* Semantic */
+  --gt-bg: var(--gt-white);
+  --gt-bg-sunken: var(--gt-blue-05);
+  --gt-bg-inverse: var(--gt-blue);
+  --gt-text-strong: var(--gt-blue);
+  --gt-text-body: var(--gt-off-black);
+  --gt-text-muted: var(--gt-neutral-600);
+  --gt-text-subtle: var(--gt-neutral-500);
+  --gt-text-inverse: var(--gt-white);
+  --gt-link: var(--gt-clear-blue);
+  --gt-border: var(--gt-neutral-200);
+  --gt-border-strong: var(--gt-neutral-300);
+
+  /* Type */
+  --gt-font: 'Mulish', 'Avenir LT', system-ui, sans-serif;
+  --gt-weight-display: 200;
+  --gt-weight-body: 400;
+  --gt-weight-subhead: 600;
+  --gt-weight-heading: 700;
+  --gt-weight-logo: 800;
+  --gt-tracking-display: -0.02em;
+  --gt-tracking-label: 0.12em;
+
+  /* Spacing — 4px base */
+  --gt-space-1: 4px;  --gt-space-2: 8px;  --gt-space-3: 12px; --gt-space-4: 16px;
+  --gt-space-5: 24px; --gt-space-6: 32px; --gt-space-7: 40px; --gt-space-8: 56px;
+  --gt-space-9: 80px;
+
+  /* Radius */
+  --gt-radius-control: 6px;
+  --gt-radius-card: 8px;
+  --gt-radius-icon: 10px;   /* favicon / small icon field */
+  --gt-radius-app-icon: 14px;
+  --gt-radius-pill: 999px;
+  --gt-radius-badge: 3px;
+
+  /* Shadows — blue-tinted, low contrast */
+  --gt-shadow-xs: 0 1px 2px rgba(26,46,90,0.06);
+  --gt-shadow-sm: 0 1px 3px rgba(26,46,90,0.08);
+  --gt-shadow-md: 0 4px 12px rgba(26,46,90,0.10);
+  --gt-shadow-lg: 0 10px 28px rgba(26,46,90,0.12);
+  --gt-shadow-focus: 0 0 0 3px rgba(48,77,155,0.55);
+
+  /* Motion */
+  --gt-transition: 150ms ease;
+}

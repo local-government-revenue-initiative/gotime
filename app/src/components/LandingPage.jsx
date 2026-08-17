@@ -61,7 +61,7 @@ export default function LandingPage() {
                   <li key={ev.id}>
                     <span className="title">
                       <Link to={`/e/${ev.token}/manage`}>{ev.title}</Link>
-                      {ev.locked ? ' 🔒' : ''}
+                      {ev.locked && <span className="badge badge-locked">Locked</span>}
                     </span>
                     <span className="meta">
                       {(ev.event_dates || []).length} date{(ev.event_dates || []).length === 1 ? '' : 's'}

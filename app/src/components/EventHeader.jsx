@@ -22,7 +22,7 @@ export default function EventHeader({ event, isOrganizer, hideDescription = fals
       </nav>
       {event.locked && (
         <div className="banner banner-locked">
-          🔒 This form is locked — responses can no longer be added or changed.
+          This form is locked — responses can no longer be added or changed.
         </div>
       )}
     </div>

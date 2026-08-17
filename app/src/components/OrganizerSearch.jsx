@@ -42,7 +42,7 @@ export default function OrganizerSearch({ eventId, existing, onAdded }) {
         </button>
       </form>
       <p className="hint">
-        Co-organizers need a GoTime account first — ask them to sign in once at {window.location.origin},
+        Co-organizers need a Go Time account first — ask them to sign in once at {window.location.origin},
         then search for their email here.
       </p>
       {error && <div className="banner banner-error">{error}</div>}

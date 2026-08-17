@@ -51,7 +51,7 @@ export function buildICS({ title, description = '', startKey, durationMinutes = 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//GoTime//Scheduling//EN',
+    'PRODID:-//Go Time//Scheduling//EN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${escapeText(uid || `${startKey}@gotime`)}`,
