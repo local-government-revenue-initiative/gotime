@@ -172,8 +172,34 @@ Each slot on the results page offers "Add to Google Calendar", "Add to
 Outlook", and a `.ics` download (`googleCalUrl` / `outlookCalUrl` / `buildICS`
 in `app/src/lib/ics.js`). No account linking or OAuth is involved.
 
+### Show my busy times (calendar overlay)
+
+A **signed-in** respondent can paste the published ICS link from their Outlook
+or Google calendar in the "My calendar" section of a time-based event; the slots
+they're already busy get a corner marker. It is display-only: it never changes
+what is saved, and the link is stored on that user's own `profiles.ics_url` row,
+which existing RLS keeps private from everyone else, organizers included.
+
+Browsers can't request those ICS URLs (no CORS), so the fetch goes through the
+`fetch-ics` edge function, which runs with `verify_jwt` and only fetches the
+caller's own URL. Because it makes outbound requests on our behalf, it is
+https-only (`webcal://` is rewritten), restricted to an allowlist of Outlook and
+Google calendar hosts, refuses redirects, and caps response size and time.
+
+`app/src/lib/icsParse.js` does the parsing: line unfolding, UTC/TZID/all-day
+dates, simple `RRULE` expansion inside the viewed window, `EXDATE`, and
+free/busy hints (`TRANSP`, `STATUS:CANCELLED`,
+`X-MICROSOFT-CDO-BUSYSTATUS`). Outlook labels times with Windows zone names, so
+TZIDs resolve in three tiers — IANA name, known Windows name, then the offset
+declared by the document's own `VTIMEZONE`. Limitations are listed in the
+module header; an imperfect overlay is acceptable because it only ever shades
+cells. A "can view when I'm busy" publish is enough — only start and end times
+are used.
+
 ### Possible next steps (schema already supports them)
 
 - Daily-digest notification mode (needs a scheduled `pg_cron`/edge job).
 - Notifications for new comments and date suggestions (same trigger pattern).
-- Full Google/Outlook calendar-account linking to read busy times (large; OAuth).
+- Full Google/Outlook calendar-account linking (OAuth), instead of a published
+  ICS link — would also allow writing invites back to attendees' calendars.
+- The busy overlay in whole-day mode (today it is time-granularity only).
