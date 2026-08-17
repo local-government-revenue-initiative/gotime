@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { applyFilter, filterGroups } from '../lib/respondentFilter.js';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout.jsx';
 import EventHeader from './EventHeader.jsx';
@@ -35,7 +36,17 @@ export default function ResultsPage() {
     [event, approvedDates],
   );
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
-  const responses = data?.responses || [];
+  const allResponses = data?.responses || [];
+
+  // Respondent filter: `included` is null for "everyone" (the default), or a
+  // Set of response ids. All aggregates recompute from the subset.
+  const [included, setIncluded] = useState(null);
+  const responses = useMemo(() => applyFilter(allResponses, included), [allResponses, included]);
+  const groups = useMemo(
+    () => filterGroups(allResponses, data?.questions, Boolean(data?.is_organizer)),
+    [allResponses, data],
+  );
+
   const scored = useMemo(
     () => (grid ? scoreSlots(grid.allKeys, responses) : null),
     [grid, responses],
@@ -128,15 +139,34 @@ export default function ResultsPage() {
   return (
     <Layout>
       <EventHeader event={event} isOrganizer={data.is_organizer} hideDescription />
+      {allResponses.length > 1 && (
+        <RespondentFilter
+          responses={allResponses}
+          groups={groups}
+          included={included}
+          onChange={setIncluded}
+        />
+      )}
+
       <div className="card">
         <h2>Combined availability</h2>
-        {responses.length === 0 ? (
+        {allResponses.length === 0 ? (
           <p className="hint">No responses yet — the heatmap appears once people respond.</p>
+        ) : responses.length === 0 ? (
+          <p className="hint">
+            No respondents selected — choose at least one person in the filter above.
+          </p>
         ) : (
           <>
             <p className="hint">
-              Darker green = works for more people (score: {levels.map((l, i) => `${l} = ${i}`).join(', ')}).
-              Tap a slot to see who can make it.
+              Darker shading = works for more people (score:{' '}
+              {levels.map((l, i) => `${l} = ${i}`).join(', ')}). Tap a slot to see who can make it.
+              {included && (
+                <>
+                  {' '}
+                  Showing <strong>{responses.length} of {allResponses.length}</strong> respondents.
+                </>
+              )}
             </p>
             <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
             {drift && (
@@ -171,9 +201,11 @@ export default function ResultsPage() {
                       )}
                     </div>
                   ))}
-                <p style={{ marginTop: 8 }}>
-                  📅 <AddToCalendar slotKey={selectedKey} />
-                </p>
+                {data.is_organizer && (
+                  <p style={{ marginTop: 8 }}>
+                    📅 <AddToCalendar slotKey={selectedKey} />
+                  </p>
+                )}
               </div>
             )}
           </>
@@ -190,7 +222,7 @@ export default function ResultsPage() {
                   <th>When ({zoneLabel(zone)})</th>
                   <th>Score</th>
                   <th>Can make it</th>
-                  <th></th>
+                  {data.is_organizer && <th></th>}
                 </tr>
               </thead>
               <tbody>
@@ -201,9 +233,11 @@ export default function ResultsPage() {
                     <td>
                       {slot.available} of {responses.length}
                     </td>
-                    <td>
-                      <AddToCalendar slotKey={slot.key} />
-                    </td>
+                    {data.is_organizer && (
+                      <td>
+                        <AddToCalendar slotKey={slot.key} />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -291,5 +325,94 @@ export default function ResultsPage() {
         </div>
       )}
     </Layout>
+  );
+}
+
+/**
+ * Include/exclude respondents so the heatmap, best times and question
+ * tallies reflect a subset (e.g. only senior staff, or only those joining in
+ * person). `included` is null for everyone, else a Set of response ids.
+ */
+function RespondentFilter({ responses, groups, included, onChange }) {
+  const allIds = responses.map((r) => r.id);
+  const isOn = (id) => !included || included.has(id);
+
+  function toggle(id) {
+    const next = new Set(included ?? allIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange(next.size === allIds.length ? null : next);
+  }
+
+  function selectOnly(ids) {
+    const set = new Set(ids);
+    onChange(set.size === allIds.length ? null : set);
+  }
+
+  return (
+    <details className="section">
+      <summary>
+        Filter respondents
+        <span className="sub">
+          {included ? `${included.size} of ${allIds.length} included` : `all ${allIds.length} included`}
+        </span>
+      </summary>
+      <div className="section-body">
+        {groups.length > 0 && (
+          <>
+            <p className="hint" style={{ fontWeight: 600, margin: '4px 0 2px' }}>
+              Quick filters
+            </p>
+            {groups.map((g) => (
+              <div key={g.key} style={{ margin: '4px 0 10px' }}>
+                <span className="hint">{g.label}:</span>
+                <div className="chip-row">
+                  {g.options.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className="chip"
+                      onClick={() => selectOnly(opt.ids)}
+                    >
+                      {opt.value} ({opt.ids.length})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+        <p className="hint" style={{ fontWeight: 600, margin: '8px 0 2px' }}>
+          People
+        </p>
+        <p className="filter-actions">
+          <button type="button" className="linklike" onClick={() => onChange(null)}>
+            Select all
+          </button>
+          {' · '}
+          <button type="button" className="linklike" onClick={() => onChange(new Set())}>
+            Select none
+          </button>
+        </p>
+        <ul className="filter-list">
+          {responses.map((r) => (
+            <li key={r.id}>
+              <label>
+                <input type="checkbox" checked={isOn(r.id)} onChange={() => toggle(r.id)} />
+                <span>
+                  {r.name}
+                  {(r.position_title || r.organization) && (
+                    <span className="meta">
+                      {' '}
+                      — {[r.position_title, r.organization].filter(Boolean).join(', ')}
+                    </span>
+                  )}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </details>
   );
 }
