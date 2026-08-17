@@ -39,9 +39,13 @@ const json = (body: unknown, status = 200) =>
   });
 
 function checkUrl(raw: string): { ok: true; url: URL } | { ok: false; reason: string } {
+  // Calendar apps hand out webcal: links interchangeably with https: ones;
+  // they address the same resource, so accept them by rewriting the scheme.
+  // Every check below (host allowlist included) still applies.
+  const candidate = raw.replace(/^webcal:\/\//i, 'https://');
   let url: URL;
   try {
-    url = new URL(raw);
+    url = new URL(candidate);
   } catch {
     return { ok: false, reason: 'not_a_url' };
   }

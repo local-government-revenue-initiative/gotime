@@ -13,14 +13,117 @@
  *  - RRULE support covers FREQ=DAILY/WEEKLY/MONTHLY/YEARLY with INTERVAL,
  *    COUNT, UNTIL and (for weekly) BYDAY. Other parts are ignored.
  *  - EXDATE is honoured; RDATE and RECURRENCE-ID overrides are not.
- *  - TZID values are passed to Luxon, which resolves IANA names. A
- *    Windows-style TZID ("Pacific Standard Time") won't resolve, so such
- *    events are treated as floating local time.
+ *  - TZID resolution has three tiers (see zoneFor): an IANA name, a known
+ *    Windows zone name (Outlook writes TZID="Eastern Standard Time"), or the
+ *    document's own VTIMEZONE offset. The last tier ignores daylight saving,
+ *    so an event inside DST can land an hour out; a zone we can't place at
+ *    all falls back to the viewer's local time.
  */
 
-import { DateTime } from 'luxon';
+import { DateTime, FixedOffsetZone, IANAZone } from 'luxon';
 
 const WEEKDAYS = { MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6, SU: 7 };
+
+/**
+ * Windows zone names → IANA. Outlook's published calendars label times with
+ * Windows names, which Luxon can't resolve, and guessing wrong moves someone's
+ * busy times by whole hours. Keyed lower-case. Covers the zones this tool's
+ * users coordinate across (see QUICK_ZONES in timezones.js) plus the common
+ * rest; anything missing falls through to the VTIMEZONE offset.
+ */
+const WINDOWS_ZONES = {
+  'utc': 'UTC',
+  'gmt standard time': 'Europe/London',
+  'greenwich standard time': 'Africa/Accra',
+  'w. europe standard time': 'Europe/Berlin',
+  'romance standard time': 'Europe/Paris',
+  'central europe standard time': 'Europe/Budapest',
+  'central european standard time': 'Europe/Warsaw',
+  'w. central africa standard time': 'Africa/Lagos',
+  'south africa standard time': 'Africa/Johannesburg',
+  'e. africa standard time': 'Africa/Nairobi',
+  'egypt standard time': 'Africa/Cairo',
+  'morocco standard time': 'Africa/Casablanca',
+  'turkey standard time': 'Europe/Istanbul',
+  'arabian standard time': 'Asia/Dubai',
+  'india standard time': 'Asia/Kolkata',
+  'china standard time': 'Asia/Shanghai',
+  'tokyo standard time': 'Asia/Tokyo',
+  'aus eastern standard time': 'Australia/Sydney',
+  'atlantic standard time': 'America/Halifax',
+  'eastern standard time': 'America/Toronto',
+  'central standard time': 'America/Chicago',
+  'mountain standard time': 'America/Denver',
+  'pacific standard time': 'America/Los_Angeles',
+  'sa pacific standard time': 'America/Bogota',
+  'e. south america standard time': 'America/Sao_Paulo',
+};
+
+/** "+0530" / "-0400" / "+053000" → minutes east of UTC. */
+function offsetToMinutes(value) {
+  const m = /^([+-])(\d{2})(\d{2})(\d{2})?$/.exec(String(value).trim());
+  if (!m) return null;
+  const [, sign, hh, mm] = m;
+  const mins = Number(hh) * 60 + Number(mm);
+  return sign === '-' ? -mins : mins;
+}
+
+/**
+ * Offsets declared by the document's own VTIMEZONE blocks, keyed by TZID.
+ * We take the STANDARD sub-block's TZOFFSETTO (falling back to DAYLIGHT when
+ * that's all there is) — enough to place an otherwise unknown zone.
+ */
+function collectVTimezones(lines) {
+  const out = {};
+  let tzid = null;
+  let sub = null;
+  let standard = null;
+  let daylight = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line === 'BEGIN:VTIMEZONE') {
+      tzid = null;
+      standard = null;
+      daylight = null;
+      continue;
+    }
+    if (line === 'END:VTIMEZONE') {
+      const offset = standard ?? daylight;
+      if (tzid && offset !== null && offset !== undefined) out[tzid] = offset;
+      tzid = null;
+      continue;
+    }
+    if (line === 'BEGIN:STANDARD') { sub = 'standard'; continue; }
+    if (line === 'BEGIN:DAYLIGHT') { sub = 'daylight'; continue; }
+    if (line === 'END:STANDARD' || line === 'END:DAYLIGHT') { sub = null; continue; }
+    if (tzid === null && line.startsWith('TZID:')) {
+      tzid = line.slice(5).trim().replace(/^"|"$/g, '');
+      continue;
+    }
+    if (line.startsWith('TZOFFSETTO:')) {
+      const mins = offsetToMinutes(line.slice('TZOFFSETTO:'.length));
+      if (mins === null) continue;
+      if (sub === 'standard') standard = mins;
+      else if (sub === 'daylight') daylight = mins;
+    }
+  }
+  return out;
+}
+
+/**
+ * Turn a TZID into something Luxon can use, or null when we can't place it.
+ * zonesByTzid comes from collectVTimezones.
+ */
+function zoneFor(tzid, zonesByTzid = {}) {
+  const name = String(tzid ?? '').replace(/^"|"$/g, '').trim();
+  if (!name) return null;
+  if (IANAZone.isValidZone(name)) return name;
+  const mapped = WINDOWS_ZONES[name.toLowerCase()];
+  if (mapped) return mapped;
+  const offset = zonesByTzid[name];
+  if (typeof offset === 'number') return FixedOffsetZone.instance(offset);
+  return null;
+}
 
 /** Undo RFC 5545 line folding: a CRLF followed by space/tab continues a line. */
 export function unfold(text) {
@@ -47,25 +150,21 @@ function parseLine(line) {
  * Handles "20260903T130000Z" (UTC), "20260903T090000" with TZID or floating,
  * and "20260903" (all-day, VALUE=DATE).
  */
-export function parseIcsDate(value, params = {}) {
+export function parseIcsDate(value, params = {}, zonesByTzid = {}) {
   const v = String(value).trim();
+  const tz = zoneFor(params.TZID, zonesByTzid);
   const dateOnly = /^\d{8}$/.test(v);
   if (dateOnly) {
     return {
-      dt: DateTime.fromFormat(v, 'yyyyMMdd', { zone: params.TZID || 'utc' }),
+      dt: DateTime.fromFormat(v, 'yyyyMMdd', { zone: tz || 'utc' }),
       allDay: true,
     };
   }
   const m = /^(\d{8})T(\d{6})(Z)?$/.exec(v);
   if (!m) return { dt: DateTime.invalid('unrecognised'), allDay: false };
   const [, d, t, z] = m;
-  const zone = z ? 'utc' : params.TZID || 'local';
-  let dt = DateTime.fromFormat(`${d}T${t}`, "yyyyMMdd'T'HHmmss", { zone });
-  // An unresolvable TZID (e.g. a Windows zone name) falls back to local.
-  if (!dt.isValid && params.TZID) {
-    dt = DateTime.fromFormat(`${d}T${t}`, "yyyyMMdd'T'HHmmss", { zone: 'local' });
-  }
-  return { dt, allDay: false };
+  const zone = z ? 'utc' : tz || 'local';
+  return { dt: DateTime.fromFormat(`${d}T${t}`, "yyyyMMdd'T'HHmmss", { zone }), allDay: false };
 }
 
 function parseRRule(value) {
@@ -142,6 +241,7 @@ function expand(start, end, rule, windowStart, windowEnd) {
  */
 export function parseBusyRanges(text, windowStart, windowEnd) {
   const lines = unfold(text).split(/\r?\n/);
+  const zones = collectVTimezones(lines);
   const busy = [];
   let cur = null;
 
@@ -161,7 +261,7 @@ export function parseBusyRanges(text, windowStart, windowEnd) {
           : cur.allDay
             ? cur.start.plus({ days: 1 })
             : cur.start;
-        const isBusy = !cur.transparent && cur.status !== 'CANCELLED';
+        const isBusy = !cur.transparent && !cur.free && cur.status !== 'CANCELLED';
         if (isBusy) {
           const occurrences = cur.rrule
             ? expand(cur.start, end, cur.rrule, windowStart, windowEnd)
@@ -189,13 +289,13 @@ export function parseBusyRanges(text, windowStart, windowEnd) {
     if (!p) continue;
     switch (p.name) {
       case 'DTSTART': {
-        const { dt, allDay } = parseIcsDate(p.value, p.params);
+        const { dt, allDay } = parseIcsDate(p.value, p.params, zones);
         cur.start = dt;
         cur.allDay = allDay || p.params.VALUE === 'DATE';
         break;
       }
       case 'DTEND': {
-        cur.end = parseIcsDate(p.value, p.params).dt;
+        cur.end = parseIcsDate(p.value, p.params, zones).dt;
         break;
       }
       case 'SUMMARY':
@@ -206,13 +306,19 @@ export function parseBusyRanges(text, windowStart, windowEnd) {
         break;
       case 'EXDATE':
         for (const v of p.value.split(',')) {
-          const { dt } = parseIcsDate(v, p.params);
+          const { dt } = parseIcsDate(v, p.params, zones);
           if (dt.isValid) cur.exdates.push(dt);
         }
         break;
       case 'TRANSP':
         // TRANSPARENT means "free" — don't count it as busy.
         cur.transparent = p.value.toUpperCase() === 'TRANSPARENT';
+        break;
+      case 'X-MICROSOFT-CDO-BUSYSTATUS':
+        // Outlook's own free/busy flag, the only detail a "can view when I'm
+        // busy" feed carries. FREE is not busy; TENTATIVE and OOF are (someone
+        // provisionally booked or away is not available).
+        cur.free = p.value.toUpperCase() === 'FREE';
         break;
       case 'STATUS':
         cur.status = p.value.toUpperCase();

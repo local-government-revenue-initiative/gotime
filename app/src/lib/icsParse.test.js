@@ -36,9 +36,23 @@ describe('parseIcsDate', () => {
     expect(dt.toFormat('yyyy-MM-dd')).toBe('2026-09-03');
   });
 
-  it('falls back to local time for an unresolvable TZID', () => {
-    const { dt } = parseIcsDate('20260903T090000', { TZID: 'Pacific Standard Time' });
+  it('resolves a Windows zone name, quoted as Outlook writes it', () => {
+    const { dt } = parseIcsDate('20260903T090000', { TZID: '"Eastern Standard Time"' });
+    // 09:00 in Toronto (EDT, UTC-4) on 3 Sep = 13:00 UTC
+    expect(dt.toUTC().toFormat('HH:mm')).toBe('13:00');
+  });
+
+  it('uses a VTIMEZONE offset for a zone name it does not know', () => {
+    const { dt } = parseIcsDate('20260903T090000', { TZID: 'Invented Standard Time' }, {
+      'Invented Standard Time': 330, // +05:30
+    });
+    expect(dt.toUTC().toFormat('HH:mm')).toBe('03:30');
+  });
+
+  it('falls back to local time for a TZID it cannot place at all', () => {
+    const { dt } = parseIcsDate('20260903T090000', { TZID: 'Nowhere Standard Time' });
     expect(dt.isValid).toBe(true);
+    expect(dt.toFormat('HH:mm')).toBe('09:00');
   });
 });
 
@@ -99,6 +113,62 @@ describe('parseBusyRanges', () => {
       'END:VEVENT',
     ].join('\r\n');
     expect(parseBusyRanges(ics(body), WIN_START, WIN_END)).toEqual([]);
+  });
+
+  it('honours Outlook’s busy status: FREE is free, OOF is busy', () => {
+    const body = [
+      'BEGIN:VEVENT',
+      'SUMMARY:Busy',
+      'DTSTART:20260903T090000Z',
+      'DTEND:20260903T100000Z',
+      'TRANSP:OPAQUE',
+      'X-MICROSOFT-CDO-BUSYSTATUS:FREE',
+      'END:VEVENT',
+      'BEGIN:VEVENT',
+      'SUMMARY:Busy',
+      'DTSTART:20260904T090000Z',
+      'DTEND:20260904T100000Z',
+      'X-MICROSOFT-CDO-BUSYSTATUS:OOF',
+      'END:VEVENT',
+    ].join('\r\n');
+    const busy = parseBusyRanges(ics(body), WIN_START, WIN_END);
+    expect(busy.map((b) => b.start.toFormat('yyyy-MM-dd'))).toEqual(['2026-09-04']);
+  });
+
+  it('reads a busy-only Outlook feed: VTIMEZONE + quoted Windows TZID', () => {
+    const text = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'METHOD:PUBLISH',
+      'PRODID:Microsoft Exchange Server 2010',
+      'X-PUBLISHED-TTL:PT1H',
+      'BEGIN:VTIMEZONE',
+      'TZID:Eastern Standard Time',
+      'BEGIN:STANDARD',
+      'DTSTART:16011104T020000',
+      'TZOFFSETFROM:-0400',
+      'TZOFFSETTO:-0500',
+      'END:STANDARD',
+      'BEGIN:DAYLIGHT',
+      'DTSTART:16010311T020000',
+      'TZOFFSETFROM:-0500',
+      'TZOFFSETTO:-0400',
+      'END:DAYLIGHT',
+      'END:VTIMEZONE',
+      'BEGIN:VEVENT',
+      'SUMMARY:Busy',
+      'DTSTART;TZID="Eastern Standard Time":20260903T140000',
+      'DTEND;TZID="Eastern Standard Time":20260903T150000',
+      'TRANSP:OPAQUE',
+      'X-MICROSOFT-CDO-BUSYSTATUS:BUSY',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const busy = parseBusyRanges(text, WIN_START, WIN_END);
+    expect(busy).toHaveLength(1);
+    // 14:00 Toronto in September (EDT, UTC-4) = 18:00 UTC — the mapped IANA
+    // zone wins over the VTIMEZONE's standard-time offset, so DST is right.
+    expect(busy[0].start.toUTC().toISO()).toBe('2026-09-03T18:00:00.000Z');
   });
 
   it('expands a weekly recurrence inside the window only', () => {

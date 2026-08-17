@@ -712,7 +712,7 @@ function MyCalendar({ grid, onBusy, busyRanges, showToast }) {
       showToast(
         ranges.length
           ? `Found ${ranges.length} calendar event${ranges.length === 1 ? '' : 's'} in this period.`
-          : 'No calendar events in this period — nothing to shade.',
+          : 'No calendar events in this period — your calendar may not publish that far ahead.',
       );
     } catch (err) {
       setError(friendlyError(err));
