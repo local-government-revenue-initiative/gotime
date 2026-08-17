@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import Layout from './Layout.jsx';
 import EventHeader from './EventHeader.jsx';
 import AvailabilityGrid from './AvailabilityGrid.jsx';
+import DayAvailability from './DayAvailability.jsx';
 import TimezonePicker from './TimezonePicker.jsx';
 import { useEvent } from '../hooks.jsx';
 import { buildSlotGrid, formatSlotInZone, zoneLabelDrift } from '../lib/slots.js';
@@ -35,6 +36,7 @@ export default function ResultsPage() {
     () => (event ? buildSlotGrid(event, approvedDates) : null),
     [event, approvedDates],
   );
+  const isDayMode = event?.granularity === 'day';
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
   const allResponses = data?.responses || [];
 
@@ -168,25 +170,41 @@ export default function ResultsPage() {
                 </>
               )}
             </p>
-            <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+            {!isDayMode && (
+              <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+            )}
             {drift && (
               <div className="banner">
                 ⚠️ A daylight-saving change falls between these dates, so times in{' '}
                 {zones.map(zoneLabel).join(' / ')} shift on some days. Hover a cell for exact times.
               </div>
             )}
-            <AvailabilityGrid
-              mode="heatmap"
-              grid={grid}
-              zones={zones}
-              levels={levels}
-              responses={responses}
-              selectedKey={selectedKey}
-              onSelectSlot={(k) => setSelectedKey(k === selectedKey ? null : k)}
-            />
+            {isDayMode ? (
+              <DayAvailability
+                mode="heatmap"
+                grid={grid}
+                levels={levels}
+                responses={responses}
+                selectedKey={selectedKey}
+                onSelectSlot={(k) => setSelectedKey(k === selectedKey ? null : k)}
+              />
+            ) : (
+              <AvailabilityGrid
+                mode="heatmap"
+                grid={grid}
+                zones={zones}
+                levels={levels}
+                responses={responses}
+                selectedKey={selectedKey}
+                onSelectSlot={(k) => setSelectedKey(k === selectedKey ? null : k)}
+              />
+            )}
             {detail && (
               <div className="slot-detail">
-                <h3>{formatSlotInZone(selectedKey, zone)} ({zoneLabel(zone)})</h3>
+                <h3>
+                  {formatSlotInZone(selectedKey, zone)}
+                  {!isDayMode && ` (${zoneLabel(zone)})`}
+                </h3>
                 {levels
                   .map((label, i) => ({ label, i, people: detail[i] }))
                   .reverse()
@@ -219,7 +237,7 @@ export default function ResultsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>When ({zoneLabel(zone)})</th>
+                  <th>{isDayMode ? 'Which day' : `When (${zoneLabel(zone)})`}</th>
                   <th>Score</th>
                   <th>Can make it</th>
                   {data.is_organizer && <th></th>}

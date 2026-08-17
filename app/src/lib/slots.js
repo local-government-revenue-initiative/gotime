@@ -29,6 +29,24 @@ export function parseSlotKey(key) {
   return DateTime.fromISO(key, { zone: 'utc' });
 }
 
+/**
+ * Day-granularity events use the plain date as the key ("2026-09-03"). A
+ * whole day is the same day in every time zone, so day keys carry no time
+ * and no zone — which is why day mode skips the zone machinery entirely.
+ */
+export function dayKey(date) {
+  return typeof date === 'string' ? date : date.toFormat('yyyy-MM-dd');
+}
+
+export function parseDayKey(key) {
+  return DateTime.fromISO(key, { zone: 'utc' });
+}
+
+/** True for a date-only key ("2026-09-03"), false for an instant key. */
+export function isDayKey(key) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(key));
+}
+
 /** "08:00" -> minutes since midnight. */
 export function timeToMinutes(t) {
   const [h, m] = String(t).split(':').map(Number);
@@ -38,7 +56,7 @@ export function timeToMinutes(t) {
 /**
  * Build the grid model for an event.
  *
- * event: { timezone, slot_minutes, day_start, day_end }
+ * event: { granularity, timezone, slot_minutes, day_start, day_end }
  * dates: array of "yyyy-MM-dd" strings (already sorted/filtered by caller).
  *
  * Returns {
@@ -47,8 +65,15 @@ export function timeToMinutes(t) {
  *   columns: [{ date, keys: [key|null per row] }],
  *   allKeys: [every non-null key],
  * }
+ *
+ * In day granularity there is exactly one row and each column's key is the
+ * bare date.
  */
 export function buildSlotGrid(event, dates) {
+  if (event.granularity === 'day') {
+    const columns = dates.map((date) => ({ date, keys: [dayKey(date)] }));
+    return { rowCount: 1, slotMinutes: null, columns, allKeys: dates.map(dayKey) };
+  }
   const zone = event.timezone || 'UTC';
   const step = Number(event.slot_minutes) || 30;
   const startMin = timeToMinutes(event.day_start || '08:00');
@@ -88,7 +113,8 @@ export function rowLabelsInZone(grid, zone) {
   const labels = [];
   for (let r = 0; r < grid.rowCount; r++) {
     const col = grid.columns.find((c) => c.keys[r] !== null);
-    if (!col) {
+    // Day granularity has no intra-day time to label.
+    if (!col || isDayKey(col.keys[r])) {
       labels.push({ label: '', hourline: false });
       continue;
     }
@@ -112,6 +138,7 @@ export function zoneLabelDrift(grid, zone) {
     for (const col of grid.columns) {
       const key = col.keys[r];
       if (key === null) continue;
+      if (isDayKey(key)) return false; // whole days: no zone drift possible
       const t = parseSlotKey(key).setZone(zone).toFormat('HH:mm');
       if (first === null) first = t;
       else if (t !== first) return true;
@@ -120,8 +147,14 @@ export function zoneLabelDrift(grid, zone) {
   return false;
 }
 
-/** Format a slot key's start time in a zone, e.g. "Wed 3 Sep, 14:30". */
+/**
+ * Format a slot key for display, e.g. "Wed 3 Sep, 14:30". Day keys have no
+ * time or zone, so they render as "Thu 3 Sep 2026".
+ */
 export function formatSlotInZone(key, zone, opts = {}) {
+  if (isDayKey(key)) {
+    return parseDayKey(key).toFormat('ccc d LLL yyyy');
+  }
   const dt = parseSlotKey(key).setZone(zone);
   return dt.toFormat(opts.timeOnly ? 'HH:mm' : 'ccc d LLL, HH:mm');
 }

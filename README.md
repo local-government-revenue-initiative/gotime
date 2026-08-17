@@ -142,6 +142,30 @@ One-time setup:
 3. The `notify-organizers` function and the DB trigger are already deployed
    (`supabase/functions/notify-organizers/`, migration `20260816120000_notifications.sql`).
 
+### Scheduling granularity
+
+Events are created in one of two modes (`events.granularity`, chosen on the
+create-event page and returned by `get_event`):
+
+- **`time`** (default) — respondents pick time slots within a day. Availability
+  keys are UTC instants (`"2026-09-03T13:30Z"`); the timezone machinery applies.
+- **`day`** — respondents mark **whole days**, dragging across a week at a time
+  (for trips, visits and multi-day events). Keys are plain dates
+  (`"2026-09-03"`), rendered by `DayAvailability.jsx` as a painting calendar,
+  and time zones are irrelevant. Calendar invites become all-day events.
+
+`save_response` validates keys against the event's granularity, so a day event
+rejects instant keys and vice versa.
+
+### Results filtering
+
+Organizers and (where responses are visible) respondents can include/exclude
+individual respondents on the Results page; the heatmap, best times and
+question tallies recompute from the subset. Quick filters group people by their
+answer to a poll question, and — for organizers only, since only they receive
+those fields — by Position or Organization (`lib/respondentFilter.js`).
+"Add to calendar" links are shown to organizers only.
+
 ### Calendar
 
 Each slot on the results page offers "Add to Google Calendar", "Add to

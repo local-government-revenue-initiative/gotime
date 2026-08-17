@@ -4,6 +4,7 @@ import { DateTime } from 'luxon';
 import Layout from './Layout.jsx';
 import EventHeader from './EventHeader.jsx';
 import AvailabilityGrid from './AvailabilityGrid.jsx';
+import DayAvailability from './DayAvailability.jsx';
 import TimezonePicker from './TimezonePicker.jsx';
 import Comments from './Comments.jsx';
 import { useSession } from '../App.jsx';
@@ -58,6 +59,7 @@ export default function RespondPage() {
     () => (event ? buildSlotGrid(event, approvedDates) : null),
     [event, approvedDates],
   );
+  const isDayMode = event?.granularity === 'day';
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
   const drift = useMemo(
     () => (grid ? zones.some((z) => zoneLabelDrift(grid, z)) : false),
@@ -425,10 +427,13 @@ export default function RespondPage() {
       <div className="card">
         <h2>Your availability</h2>
         <p className="hint">
-          Pick an option below, then tap or drag across the grid. Everything starts as
-          “{levels[0]}”, so you only select the times that could work.
+          Pick an option below, then tap or drag across the{' '}
+          {isDayMode ? 'calendar' : 'grid'}. Everything starts as “{levels[0]}”, so you only
+          select the {isDayMode ? 'days' : 'times'} that could work.
         </p>
-        <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+        {!isDayMode && (
+          <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+        )}
         {drift && (
           <div className="banner">
             ⚠️ A daylight-saving change falls between these dates, so times in{' '}
@@ -437,21 +442,37 @@ export default function RespondPage() {
           </div>
         )}
         {event.locked ? (
-          <div className="banner banner-locked">The form is locked, so the grid is read-only.</div>
+          <div className="banner banner-locked">
+            The form is locked, so this is read-only.
+          </div>
         ) : null}
-        <AvailabilityGrid
-          mode="edit"
-          grid={grid}
-          zones={zones}
-          levels={levels}
-          availability={availability}
-          onPaint={event.locked ? () => {} : paint}
-          brush={brush}
-          setBrush={setBrush}
-        />
-        <p className="hint">
-          Times shown in {zoneLabel(zone)}. The event’s own time zone is {event.timezone}.
-        </p>
+        {isDayMode ? (
+          <DayAvailability
+            mode="edit"
+            grid={grid}
+            levels={levels}
+            availability={availability}
+            onPaint={event.locked ? () => {} : paint}
+            brush={brush}
+            setBrush={setBrush}
+          />
+        ) : (
+          <>
+            <AvailabilityGrid
+              mode="edit"
+              grid={grid}
+              zones={zones}
+              levels={levels}
+              availability={availability}
+              onPaint={event.locked ? () => {} : paint}
+              brush={brush}
+              setBrush={setBrush}
+            />
+            <p className="hint">
+              Times shown in {zoneLabel(zone)}. The event’s own time zone is {event.timezone}.
+            </p>
+          </>
+        )}
       </div>
 
       {data.questions.length > 0 && (

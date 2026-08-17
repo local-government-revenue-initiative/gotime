@@ -78,3 +78,31 @@ describe('outlookCalUrl', () => {
     expect(u.searchParams.get('enddt')).toBe('2026-09-03T14:00:00Z');
   });
 });
+
+describe('all-day (day-granularity) events', () => {
+  it('emits DATE values with an exclusive next-day DTEND', () => {
+    const ics = buildICS({
+      title: 'Lilongwe visit',
+      startKey: '2026-09-03',
+      uid: 'day-1@gotime',
+    });
+    expect(ics).toContain('DTSTART;VALUE=DATE:20260903');
+    // DTEND is exclusive: a one-day event ends on the 4th.
+    expect(ics).toContain('DTEND;VALUE=DATE:20260904');
+    // No datetime forms of DTSTART/DTEND (DTSTAMP stays a UTC timestamp).
+    expect(ics).not.toMatch(/DTSTART:\d{8}T/);
+    expect(ics).not.toMatch(/DTEND:\d{8}T/);
+  });
+
+  it('uses plain dates in the Google URL', () => {
+    const u = new URL(googleCalUrl({ title: 'Visit', startKey: '2026-09-03' }));
+    expect(u.searchParams.get('dates')).toBe('20260903/20260904');
+  });
+
+  it('uses plain dates and allday=true in the Outlook URL', () => {
+    const u = new URL(outlookCalUrl({ title: 'Visit', startKey: '2026-09-03' }));
+    expect(u.searchParams.get('startdt')).toBe('2026-09-03');
+    expect(u.searchParams.get('enddt')).toBe('2026-09-04');
+    expect(u.searchParams.get('allday')).toBe('true');
+  });
+});

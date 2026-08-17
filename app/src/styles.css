@@ -251,6 +251,30 @@ details.section > .section-body { padding: 0 16px 14px; }
 }
 .cal-day:disabled { color: var(--line); cursor: default; }
 
+/* whole-day availability calendar (day-granularity events) */
+.cal-wide { max-width: 480px; }
+.cal-wide .cal-grid { touch-action: none; }
+.cal-day-lg {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 0.85rem;
+}
+.cal-day-lg.not-candidate {
+  background: none;
+  border-color: transparent;
+  color: var(--line);
+}
+.cal-day-lg.pending { outline: 2px dotted #f2d98c; }
+.cal-day-lg.selected { outline: 2px solid var(--ink); }
+.cal-day-score { font-weight: 700; font-size: 0.78rem; }
+.cal-day-num { line-height: 1; }
+
 /* ---------- brush bar ---------- */
 .brush-bar {
   position: sticky;

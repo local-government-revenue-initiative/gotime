@@ -8,6 +8,8 @@ import {
   zoneLabelDrift,
   formatSlotInZone,
   sortSlotKeys,
+  dayKey,
+  isDayKey,
 } from './slots.js';
 import { DateTime } from 'luxon';
 
@@ -121,5 +123,51 @@ describe('formatSlotInZone / sortSlotKeys', () => {
       '2026-09-03T13:30Z',
       '2026-10-01T10:00Z',
     ]);
+  });
+});
+
+describe('day granularity', () => {
+  const dayEvent = { granularity: 'day', timezone: 'Europe/London' };
+
+  it('isDayKey distinguishes date keys from instant keys', () => {
+    expect(isDayKey('2026-09-03')).toBe(true);
+    expect(isDayKey('2026-09-03T13:30Z')).toBe(false);
+  });
+
+  it('dayKey passes through date strings', () => {
+    expect(dayKey('2026-09-03')).toBe('2026-09-03');
+  });
+
+  it('builds one row with bare-date keys, one per date', () => {
+    const grid = buildSlotGrid(dayEvent, ['2026-09-03', '2026-09-04', '2026-09-07']);
+    expect(grid.rowCount).toBe(1);
+    expect(grid.slotMinutes).toBeNull();
+    expect(grid.columns.map((c) => c.keys)).toEqual([
+      ['2026-09-03'],
+      ['2026-09-04'],
+      ['2026-09-07'],
+    ]);
+    expect(grid.allKeys).toEqual(['2026-09-03', '2026-09-04', '2026-09-07']);
+  });
+
+  it('has no time labels and never reports zone drift', () => {
+    // Dates spanning a DST change would drift in time mode.
+    const grid = buildSlotGrid(dayEvent, ['2026-10-24', '2026-11-02']);
+    expect(rowLabelsInZone(grid, 'America/Toronto')).toEqual([{ label: '', hourline: false }]);
+    expect(zoneLabelDrift(grid, 'America/Toronto')).toBe(false);
+  });
+
+  it('formats day keys without a time or zone', () => {
+    expect(formatSlotInZone('2026-09-03', 'America/Toronto')).toBe('Thu 3 Sep 2026');
+    // Instant keys still render with the time.
+    expect(formatSlotInZone('2026-09-03T13:30Z', 'Europe/London')).toBe('Thu 3 Sep, 14:30');
+  });
+
+  it('ignores day_start/day_end/slot_minutes in day mode', () => {
+    const grid = buildSlotGrid(
+      { ...dayEvent, day_start: '08:00', day_end: '18:00', slot_minutes: 30 },
+      ['2026-09-03'],
+    );
+    expect(grid.rowCount).toBe(1);
   });
 });

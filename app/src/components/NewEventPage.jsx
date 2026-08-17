@@ -30,6 +30,7 @@ export default function NewEventPage() {
   const [anonymize, setAnonymize] = useState(false);
   const [allowSuggestions, setAllowSuggestions] = useState(false);
   const [notifyMode, setNotifyMode] = useState('new');
+  const [granularity, setGranularity] = useState('time');
   const [questions, setQuestions] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +64,7 @@ export default function NewEventPage() {
           anonymize_names: responsesVisible ? anonymize : false,
           allow_suggestions: allowSuggestions,
           notify_mode: notifyMode,
+          granularity,
         },
         dates,
         cleanQuestions,
@@ -123,9 +125,46 @@ export default function NewEventPage() {
         </div>
 
         <div className="card">
+          <h2>What are you scheduling?</h2>
+          <div className="radio">
+            <input
+              type="radio"
+              id="gran-time"
+              name="granularity"
+              checked={granularity === 'time'}
+              onChange={() => setGranularity('time')}
+            />
+            <label htmlFor="gran-time" style={{ margin: 0, fontWeight: 400 }}>
+              A meeting at a time of day
+              <span className="sub">
+                Respondents pick time slots (e.g. 30-minute slots) on the dates below.
+              </span>
+            </label>
+          </div>
+          <div className="radio">
+            <input
+              type="radio"
+              id="gran-day"
+              name="granularity"
+              checked={granularity === 'day'}
+              onChange={() => setGranularity('day')}
+            />
+            <label htmlFor="gran-day" style={{ margin: 0, fontWeight: 400 }}>
+              Whole days — a trip, visit or multi-day event
+              <span className="sub">
+                Respondents mark whole days (drag across a week at a time). No times or time
+                zones involved.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="card">
           <h2>Potential Dates <span className="req">*</span></h2>
           <p className="hint">
-            Click dates to add or remove them — you can also drag across several days.
+            {granularity === 'day'
+              ? 'Add every day that could be part of the event — respondents will mark which of these work.'
+              : 'Click dates to add or remove them — you can also drag across several days.'}
           </p>
           <DateMultiPicker value={dates} onChange={setDates} />
           {dates.length > 0 && (
@@ -140,72 +179,78 @@ export default function NewEventPage() {
               ))}
             </ul>
           )}
-          <div style={{ margin: '12px 0 0' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone for organizer</span>
-            <p className="hint" style={{ margin: '2px 0 6px' }}>
-              The daily range of available times (set below) is interpreted in this zone.
-              Respondents can view the grid in their own time zone.
-            </p>
-            <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Commonly used time zones</p>
-          </div>
-          <div className="chip-row">
-            {QUICK_ZONES.map((q) => (
-              <button
-                key={q.zone}
-                type="button"
-                className="chip"
-                aria-pressed={timezone === q.zone}
-                onClick={() => setTimezone(q.zone)}
-              >
-                {q.label}
-              </button>
-            ))}
-          </div>
-          <label htmlFor="ev-tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 0' }}>
-            Full time zone list
-            <select
-              id="ev-tz-select"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              style={{ fontWeight: 400 }}
-            >
-              {!allZones().includes(timezone) && (
-                <option value={timezone}>{displayZoneName(timezone)}</option>
-              )}
-              {allZones().map((z) => (
-                <option key={z} value={z}>
-                  {displayZoneName(z)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {granularity === 'time' && (
+            <>
+              <div style={{ margin: '12px 0 0' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone for organizer</span>
+                <p className="hint" style={{ margin: '2px 0 6px' }}>
+                  The daily range of available times (set below) is interpreted in this zone.
+                  Respondents can view the grid in their own time zone.
+                </p>
+                <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Commonly used time zones</p>
+              </div>
+              <div className="chip-row">
+                {QUICK_ZONES.map((q) => (
+                  <button
+                    key={q.zone}
+                    type="button"
+                    className="chip"
+                    aria-pressed={timezone === q.zone}
+                    onClick={() => setTimezone(q.zone)}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+              <label htmlFor="ev-tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 0' }}>
+                Full time zone list
+                <select
+                  id="ev-tz-select"
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  style={{ fontWeight: 400 }}
+                >
+                  {!allZones().includes(timezone) && (
+                    <option value={timezone}>{displayZoneName(timezone)}</option>
+                  )}
+                  {allZones().map((z) => (
+                    <option key={z} value={z}>
+                      {displayZoneName(z)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
         </div>
 
-        <details className="section">
-          <summary>
-            Times &amp; slot length
-            <span className="sub">{dayStart}–{dayEnd}, {slotMinutes}-minute slots</span>
-          </summary>
-          <div className="section-body">
-            <label htmlFor="ev-start">
-              Daily start time
-              <input id="ev-start" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
-            </label>
-            <label htmlFor="ev-end">
-              Daily end time
-              <input id="ev-end" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
-            </label>
-            <label htmlFor="ev-slot">
-              Slot length
-              <select id="ev-slot" value={slotMinutes} onChange={(e) => setSlotMinutes(Number(e.target.value))}>
-                <option value={15}>15 minutes</option>
-                <option value={20}>20 minutes</option>
-                <option value={30}>30 minutes (default)</option>
-                <option value={60}>1 hour</option>
-              </select>
-            </label>
-          </div>
-        </details>
+        {granularity === 'time' && (
+          <details className="section">
+            <summary>
+              Times &amp; slot length
+              <span className="sub">{dayStart}–{dayEnd}, {slotMinutes}-minute slots</span>
+            </summary>
+            <div className="section-body">
+              <label htmlFor="ev-start">
+                Daily start time
+                <input id="ev-start" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
+              </label>
+              <label htmlFor="ev-end">
+                Daily end time
+                <input id="ev-end" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
+              </label>
+              <label htmlFor="ev-slot">
+                Slot length
+                <select id="ev-slot" value={slotMinutes} onChange={(e) => setSlotMinutes(Number(e.target.value))}>
+                  <option value={15}>15 minutes</option>
+                  <option value={20}>20 minutes</option>
+                  <option value={30}>30 minutes (default)</option>
+                  <option value={60}>1 hour</option>
+                </select>
+              </label>
+            </div>
+          </details>
+        )}
 
         <details className="section">
           <summary>
