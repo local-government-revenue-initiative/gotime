@@ -64,3 +64,44 @@ export function buildICS({ title, description = '', startKey, durationMinutes = 
   lines.push('END:VEVENT', 'END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';
 }
+
+/** start/end of a slot as { start, end } Luxon DateTimes (UTC). */
+function slotRange(startKey, durationMinutes) {
+  const start = parseSlotKey(startKey);
+  return { start, end: start.plus({ minutes: durationMinutes }) };
+}
+
+function calDescription(description, url) {
+  return [description, url && `Respond or see results: ${url}`].filter(Boolean).join('\n\n');
+}
+
+/**
+ * "Add to Google Calendar" template URL for a slot. Opens a pre-filled new
+ * event in the viewer's own Google Calendar (no login handled by us).
+ */
+export function googleCalUrl({ title, description = '', startKey, durationMinutes = 30, url = '' }) {
+  const { start, end } = slotRange(startKey, durationMinutes);
+  const fmt = (dt) => dt.toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details: calDescription(description, url),
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** "Add to Outlook" (Outlook.com / Microsoft 365 web) compose URL for a slot. */
+export function outlookCalUrl({ title, description = '', startKey, durationMinutes = 30, url = '' }) {
+  const { start, end } = slotRange(startKey, durationMinutes);
+  const iso = (dt) => dt.toUTC().toISO({ suppressMilliseconds: true });
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: title,
+    startdt: iso(start),
+    enddt: iso(end),
+    body: calDescription(description, url),
+  });
+  return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+}

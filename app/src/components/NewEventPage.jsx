@@ -29,6 +29,7 @@ export default function NewEventPage() {
   const [responsesVisible, setResponsesVisible] = useState(true);
   const [anonymize, setAnonymize] = useState(false);
   const [allowSuggestions, setAllowSuggestions] = useState(false);
+  const [notifyMode, setNotifyMode] = useState('new');
   const [questions, setQuestions] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -61,6 +62,7 @@ export default function NewEventPage() {
           responses_visible: responsesVisible,
           anonymize_names: responsesVisible ? anonymize : false,
           allow_suggestions: allowSuggestions,
+          notify_mode: notifyMode,
         },
         dates,
         cleanQuestions,
@@ -313,6 +315,18 @@ export default function NewEventPage() {
                 <span className="sub">Suggestions wait for your approval before joining the grid.</span>
               </label>
             </div>
+            <label htmlFor="ev-notify">
+              Email organizers when someone responds
+              <select id="ev-notify" value={notifyMode} onChange={(e) => setNotifyMode(e.target.value)}>
+                <option value="new">New responses only</option>
+                <option value="all">New responses and edits</option>
+                <option value="off">Don’t email me</option>
+              </select>
+              <span className="hint" style={{ display: 'block', fontWeight: 400, margin: '4px 0 0' }}>
+                Emails every organizer of this event. Requires the one-time email setup (ask the
+                tool administrator); until then it stays off.
+              </span>
+            </label>
           </div>
         </details>
 

@@ -9,7 +9,7 @@ import { buildSlotGrid, formatSlotInZone, zoneLabelDrift } from '../lib/slots.js
 import { detectZone, zoneLabel } from '../lib/timezones.js';
 import { bestSlots, scoreSlots, slotBreakdown, questionTallies } from '../lib/aggregate.js';
 import { levelColor } from '../lib/levelColors.js';
-import { buildICS } from '../lib/ics.js';
+import { buildICS, googleCalUrl, outlookCalUrl } from '../lib/ics.js';
 
 export default function ResultsPage() {
   const { token } = useParams();
@@ -69,21 +69,43 @@ export default function ResultsPage() {
 
   const hidden = !event.responses_visible && !data.is_organizer;
 
-  function downloadInvite(key) {
-    const ics = buildICS({
+  function calArgs(key) {
+    return {
       title: event.title,
       description: event.description,
       startKey: key,
       durationMinutes: event.slot_minutes,
       url: `${window.location.origin}/e/${event.token}`,
-      uid: `${event.id}-${key}@gotime`,
-    });
+    };
+  }
+
+  function downloadInvite(key) {
+    const ics = buildICS({ ...calArgs(key), uid: `${event.id}-${key}@gotime` });
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${event.title.replace(/[^\w-]+/g, '_')}.ics`;
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  function AddToCalendar({ slotKey }) {
+    return (
+      <span className="cal-links">
+        <span className="cal-links-label">Add to calendar:</span>{' '}
+        <a href={googleCalUrl(calArgs(slotKey))} target="_blank" rel="noopener noreferrer">
+          Google
+        </a>
+        {' · '}
+        <a href={outlookCalUrl(calArgs(slotKey))} target="_blank" rel="noopener noreferrer">
+          Outlook
+        </a>
+        {' · '}
+        <button type="button" className="linklike" onClick={() => downloadInvite(slotKey)}>
+          Download (.ics)
+        </button>
+      </span>
+    );
   }
 
   if (hidden) {
@@ -150,9 +172,7 @@ export default function ResultsPage() {
                     </div>
                   ))}
                 <p style={{ marginTop: 8 }}>
-                  <button type="button" className="btn btn-small" onClick={() => downloadInvite(selectedKey)}>
-                    📅 Download calendar invite for this slot
-                  </button>
+                  📅 <AddToCalendar slotKey={selectedKey} />
                 </p>
               </div>
             )}
@@ -182,9 +202,7 @@ export default function ResultsPage() {
                       {slot.available} of {responses.length}
                     </td>
                     <td>
-                      <button type="button" className="btn btn-small" onClick={() => downloadInvite(slot.key)}>
-                        📅 Invite
-                      </button>
+                      <AddToCalendar slotKey={slot.key} />
                     </td>
                   </tr>
                 ))}

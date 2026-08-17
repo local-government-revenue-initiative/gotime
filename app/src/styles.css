@@ -363,6 +363,10 @@ details.section > .section-body { padding: 0 16px 14px; }
 .slot-detail ul { margin: 4px 0; padding-left: 18px; }
 .slot-detail .none { color: var(--muted); }
 
+.cal-links { font-size: 0.9rem; white-space: nowrap; }
+.cal-links-label { color: var(--muted); }
+.cal-links a, .cal-links .linklike { white-space: nowrap; }
+
 .badge {
   display: inline-block; border-radius: 20px; padding: 1px 10px;
   font-size: 0.82rem; font-weight: 600;

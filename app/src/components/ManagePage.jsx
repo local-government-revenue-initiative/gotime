@@ -351,6 +351,7 @@ function SettingsForm({ event, busy, onSave }) {
   const [responsesVisible, setResponsesVisible] = useState(event.responses_visible);
   const [anonymize, setAnonymize] = useState(event.anonymize_names);
   const [allowSuggestions, setAllowSuggestions] = useState(event.allow_suggestions);
+  const [notifyMode, setNotifyMode] = useState(event.notify_mode || 'new');
 
   return (
     <form
@@ -362,6 +363,7 @@ function SettingsForm({ event, busy, onSave }) {
           responses_visible: responsesVisible,
           anonymize_names: responsesVisible ? anonymize : false,
           allow_suggestions: allowSuggestions,
+          notify_mode: notifyMode,
         });
       }}
     >
@@ -408,9 +410,20 @@ function SettingsForm({ event, busy, onSave }) {
           Let respondents suggest additional dates
         </label>
       </div>
+      <label htmlFor="st-notify">
+        Email organizers when someone responds
+        <select id="st-notify" value={notifyMode} onChange={(e) => setNotifyMode(e.target.value)}>
+          <option value="new">New responses only</option>
+          <option value="all">New responses and edits</option>
+          <option value="off">Don’t email</option>
+        </select>
+        <span className="hint" style={{ display: 'block', fontWeight: 400, margin: '4px 0 0' }}>
+          Emails every organizer of this event. Requires the one-time email setup; until then it stays off.
+        </span>
+      </label>
       <p className="hint">
         Time range, slot length and time zone are fixed once responses exist — changing them would
-        silently invalidate what people already painted.
+        silently invalidate what people already entered.
       </p>
       <button className="btn btn-primary" type="submit" disabled={busy}>
         Save settings

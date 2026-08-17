@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildICS, escapeText, foldLine } from './ics.js';
+import { buildICS, escapeText, foldLine, googleCalUrl, outlookCalUrl } from './ics.js';
 
 describe('escapeText', () => {
   it('escapes special characters', () => {
@@ -40,5 +40,41 @@ describe('buildICS', () => {
     expect(ics).toContain('UID:evt-1@gotime');
     expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true);
     expect(ics).not.toMatch(/(?<!\r)\n/); // every newline is CRLF
+  });
+});
+
+describe('googleCalUrl', () => {
+  it('builds a template URL with UTC start/end range and encoded title', () => {
+    const u = new URL(
+      googleCalUrl({
+        title: 'Team planning',
+        description: 'Notes',
+        startKey: '2026-09-03T13:30Z',
+        durationMinutes: 60,
+        url: 'https://example.com/e/abc',
+      }),
+    );
+    expect(u.origin + u.pathname).toBe('https://calendar.google.com/calendar/render');
+    expect(u.searchParams.get('action')).toBe('TEMPLATE');
+    expect(u.searchParams.get('text')).toBe('Team planning');
+    expect(u.searchParams.get('dates')).toBe('20260903T133000Z/20260903T143000Z');
+    expect(u.searchParams.get('details')).toContain('https://example.com/e/abc');
+  });
+});
+
+describe('outlookCalUrl', () => {
+  it('builds a compose URL with ISO start/end', () => {
+    const u = new URL(
+      outlookCalUrl({
+        title: 'Team planning',
+        startKey: '2026-09-03T13:30Z',
+        durationMinutes: 30,
+      }),
+    );
+    expect(u.origin + u.pathname).toBe('https://outlook.office.com/calendar/0/deeplink/compose');
+    expect(u.searchParams.get('rru')).toBe('addevent');
+    expect(u.searchParams.get('subject')).toBe('Team planning');
+    expect(u.searchParams.get('startdt')).toBe('2026-09-03T13:30:00Z');
+    expect(u.searchParams.get('enddt')).toBe('2026-09-03T14:00:00Z');
   });
 });
