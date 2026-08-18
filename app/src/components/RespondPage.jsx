@@ -262,7 +262,7 @@ export default function RespondPage() {
                 onClick={() => openEntry(mine, { skipConfirm: true })}
                 disabled={event.locked}
               >
-                Review or update my availability
+                Add or update my availability
               </button>
               {!event.locked && (
                 <p className="hint">
