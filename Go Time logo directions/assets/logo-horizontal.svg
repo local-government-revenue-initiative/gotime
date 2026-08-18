@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 64" width="250" height="64">
+  <rect x="4" y="4" width="16" height="16" fill="#D1D4DE"></rect>
+  <rect x="24" y="4" width="16" height="16" fill="#D1D4DE"></rect>
+  <rect x="44" y="4" width="16" height="16" fill="#009E47"></rect>
+  <rect x="4" y="24" width="16" height="16" fill="#D1D4DE"></rect>
+  <rect x="24" y="24" width="16" height="16" fill="#FFC70A"></rect>
+  <rect x="44" y="24" width="16" height="16" fill="#D1D4DE"></rect>
+  <rect x="4" y="44" width="16" height="16" fill="#1A2E5A"></rect>
+  <rect x="24" y="44" width="16" height="16" fill="#D1D4DE"></rect>
+  <rect x="44" y="44" width="16" height="16" fill="#47BFAF"></rect>
+  <text x="84" y="47" font-family="Mulish, &#39;Avenir LT&#39;, system-ui, sans-serif" font-size="44" letter-spacing="-0.88" fill="#1A2E5A"><tspan font-weight="800">Go</tspan><tspan font-weight="200"> Time</tspan></text>
+</svg>
