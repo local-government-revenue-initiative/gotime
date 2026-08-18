@@ -273,9 +273,6 @@ export default function ManagePage() {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Phone (WhatsApp)</th>
-                    <th>Position</th>
-                    <th>Organization</th>
                     <th>Updated</th>
                     <th></th>
                   </tr>
@@ -288,9 +285,6 @@ export default function ManagePage() {
                         {r.claimed ? ' 🔗' : ''}
                       </td>
                       <td>{r.email}</td>
-                      <td>{r.phone}</td>
-                      <td>{r.position_title}</td>
-                      <td>{r.organization}</td>
                       <td>{DateTime.fromISO(r.updated_at).toFormat('d LLL, HH:mm')}</td>
                       <td>
                         <button
@@ -477,12 +471,12 @@ function downloadCsv(data) {
   ]);
   const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
   const header = [
-    'Name', 'Email', 'Phone', 'Position', 'Organization', 'Updated',
+    'Name', 'Email', 'Updated',
     ...questions.map((q) => q.label),
     ...slotKeys.map((k) => formatSlotInZone(k, event.timezone)),
   ];
   const rows = responses.map((r) => [
-    r.name, r.email, r.phone, r.position_title, r.organization, r.updated_at,
+    r.name, r.email, r.updated_at,
     ...questions.map((q) => {
       const v = r.answers?.[q.id];
       return Array.isArray(v) ? v.join('; ') : v ?? '';

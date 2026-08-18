@@ -45,7 +45,7 @@ export default function ResultsPage() {
   const [included, setIncluded] = useState(null);
   const responses = useMemo(() => applyFilter(allResponses, included), [allResponses, included]);
   const groups = useMemo(
-    () => filterGroups(allResponses, data?.questions, Boolean(data?.is_organizer)),
+    () => filterGroups(allResponses, data?.questions),
     [allResponses, data],
   );
 
@@ -175,7 +175,7 @@ export default function ResultsPage() {
             )}
             {drift && (
               <div className="banner">
-                ⚠️ A daylight-saving change falls between these dates, so times in{' '}
+                A daylight-saving change falls between these dates, so times in{' '}
                 {zones.map(zoneLabel).join(' / ')} shift on some days. Hover a cell for exact times.
               </div>
             )}
@@ -419,12 +419,6 @@ function RespondentFilter({ responses, groups, included, onChange }) {
                 <input type="checkbox" checked={isOn(r.id)} onChange={() => toggle(r.id)} />
                 <span>
                   {r.name}
-                  {(r.position_title || r.organization) && (
-                    <span className="meta">
-                      {' '}
-                      — {[r.position_title, r.organization].filter(Boolean).join(', ')}
-                    </span>
-                  )}
                 </span>
               </label>
             </li>

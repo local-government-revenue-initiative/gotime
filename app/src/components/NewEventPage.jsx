@@ -330,7 +330,7 @@ export default function NewEventPage() {
               <label htmlFor="ev-visible" style={{ margin: 0, fontWeight: 400 }}>
                 Respondents can see each other’s responses
                 <span className="sub">
-                  Only organizers can see contact details (email, phone).
+                  Only organizers can see email addresses.
                 </span>
               </label>
             </div>

@@ -29,8 +29,8 @@ export async function getEvent(token) {
 }
 
 /**
- * Create or update a response. fields = { name, email, phone,
- * position_title, organization, availability, answers }.
+ * Create or update a response. fields = { name, email, availability,
+ * answers }.
  */
 export async function saveResponse(token, responseId, fields, claim = false) {
   const supabase = await client();

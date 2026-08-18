@@ -34,10 +34,13 @@ configured in the UI, using the Vercel + Supabase setup proven in
 
 **Respondents** (no account needed):
 - Enter name + email (only ever shown to organizers). Nothing else is asked
-  for by default — an organizer who wants a phone number, job title or
-  organization adds a question for it, so no event carries fields it doesn't
-  use. The `responses` table keeps those columns, and the results filter can
-  still group by them, for events answered before the fields were dropped.
+  for — an organizer who wants a phone number, job title or organization adds
+  a question for it, so no event carries fields it doesn't use, and the
+  answers show up in the question tallies and result filters like any other.
+- Respond straight away with no sign-in, or sign in first (optional, offered
+  on the event page): a signed-in respondent can lock their response to their
+  account so nobody else with the link can edit it, and can create events of
+  their own.
 - Paint availability per slot: pick a level, tap or drag across the grid
 - Return later on the same device and continue automatically; or open your
   entry from the list on another device (with an "is this you?" confirmation,

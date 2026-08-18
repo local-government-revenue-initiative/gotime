@@ -8,18 +8,9 @@ const QUESTIONS = [
 ];
 
 const RESPONSES = [
-  {
-    id: 'r1', name: 'Ama', position_title: 'Senior Analyst', organization: 'LOGRI',
-    answers: { q1: 'Online', q2: ['Tax'], q3: 'hello' },
-  },
-  {
-    id: 'r2', name: 'Ben', position_title: 'Intern', organization: 'LOGRI',
-    answers: { q1: 'In person', q2: ['Tax', 'Land'] },
-  },
-  {
-    id: 'r3', name: 'Cleo', position_title: '', organization: 'City Council',
-    answers: { q1: 'Online' },
-  },
+  { id: 'r1', name: 'Ama', answers: { q1: 'Online', q2: ['Tax'], q3: 'hello' } },
+  { id: 'r2', name: 'Ben', answers: { q1: 'In person', q2: ['Tax', 'Land'] } },
+  { id: 'r3', name: 'Cleo', answers: { q1: 'Online' } },
 ];
 
 describe('applyFilter', () => {
@@ -39,7 +30,7 @@ describe('applyFilter', () => {
 
 describe('filterGroups', () => {
   it('groups by single and multi question answers, skipping text', () => {
-    const groups = filterGroups(RESPONSES, QUESTIONS, false);
+    const groups = filterGroups(RESPONSES, QUESTIONS);
     expect(groups.map((g) => g.key)).toEqual(['q:q1', 'q:q2']);
 
     const q1 = groups[0];
@@ -55,31 +46,17 @@ describe('filterGroups', () => {
   });
 
   it('omits options nobody picked', () => {
-    const groups = filterGroups([RESPONSES[2]], QUESTIONS, false);
+    const groups = filterGroups([RESPONSES[2]], QUESTIONS);
     expect(groups[0].options).toEqual([{ value: 'Online', ids: ['r3'] }]);
   });
 
-  it('excludes contact fields for non-organizers', () => {
-    const groups = filterGroups(RESPONSES, QUESTIONS, false);
-    expect(groups.some((g) => g.key.startsWith('f:'))).toBe(false);
-  });
-
-  it('includes position/organization groups for organizers, ignoring blanks', () => {
-    const groups = filterGroups(RESPONSES, QUESTIONS, true);
-    const pos = groups.find((g) => g.key === 'f:position_title');
-    expect(pos.options).toEqual([
-      { value: 'Intern', ids: ['r2'] },
-      { value: 'Senior Analyst', ids: ['r1'] },
-    ]);
-    const org = groups.find((g) => g.key === 'f:organization');
-    expect(org.options).toEqual([
-      { value: 'City Council', ids: ['r3'] },
-      { value: 'LOGRI', ids: ['r1', 'r2'] },
-    ]);
+  it('never emits contact-field groups (the fields no longer exist)', () => {
+    const groups = filterGroups(RESPONSES, QUESTIONS);
+    expect(groups.every((g) => g.key.startsWith('q:'))).toBe(true);
   });
 
   it('handles no questions and no responses', () => {
-    expect(filterGroups([], [], true)).toEqual([]);
-    expect(filterGroups(RESPONSES, undefined, false)).toEqual([]);
+    expect(filterGroups([], [])).toEqual([]);
+    expect(filterGroups(RESPONSES, undefined)).toEqual([]);
   });
 });

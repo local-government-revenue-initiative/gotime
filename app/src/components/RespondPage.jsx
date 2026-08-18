@@ -7,6 +7,7 @@ import AvailabilityGrid from './AvailabilityGrid.jsx';
 import DayAvailability from './DayAvailability.jsx';
 import TimezonePicker from './TimezonePicker.jsx';
 import Comments from './Comments.jsx';
+import AuthPanel from './AuthPanel.jsx';
 import { useSession } from '../App.jsx';
 import { useEvent, useToast } from '../hooks.jsx';
 import { saveResponse, suggestDate, getMyProfile, updateMyIcsUrl, fetchMyCalendarIcs } from '../api.js';
@@ -23,10 +24,7 @@ import {
   setMyEntryCache,
 } from '../lib/localIdentity.js';
 
-/* phone / position_title / organization are no longer collected — organizers
-   who want them add their own question. They stay in the shape (and in the
-   payload) so answers given before the inputs were removed survive an edit. */
-const EMPTY_FIELDS = { name: '', email: '', phone: '', position_title: '', organization: '' };
+const EMPTY_FIELDS = { name: '', email: '' };
 
 export default function RespondPage() {
   const { token } = useParams();
@@ -139,15 +137,12 @@ export default function RespondPage() {
 
   function seedFromCacheOrResponse(resp) {
     // Prefer full server fields (organizer/claimed-own); fall back to the
-    // local cache for contact fields the server withholds from anonymous users.
+    // local cache for the email the server withholds from anonymous users.
     const cache = getMyEntryCache(token);
     const useCache = cache && (!resp || cache.id === resp.id);
     return {
       name: resp?.name && !resp.anonymized ? resp.name : (useCache ? cache.fields?.name : '') || resp?.name || '',
       email: resp?.email ?? (useCache ? cache.fields?.email : '') ?? '',
-      phone: resp?.phone ?? (useCache ? cache.fields?.phone : '') ?? '',
-      position_title: resp?.position_title ?? (useCache ? cache.fields?.position_title : '') ?? '',
-      organization: resp?.organization ?? (useCache ? cache.fields?.organization : '') ?? '',
     };
   }
 
@@ -180,7 +175,11 @@ export default function RespondPage() {
   function startNew() {
     const cache = getMyEntryCache(token);
     setResponseId(null);
-    setFields(cache?.fields ? { ...EMPTY_FIELDS, ...cache.fields } : EMPTY_FIELDS);
+    setFields(
+      cache?.fields
+        ? { name: cache.fields.name || '', email: cache.fields.email || '' }
+        : EMPTY_FIELDS,
+    );
     setAnswers({});
     setAvailability({});
     setBrush(defaultBrush);
@@ -283,7 +282,7 @@ export default function RespondPage() {
             <>
               <h2>Add your availability</h2>
               <p className="hint">
-                No account needed — enter your name, select the times that work, and save.
+                No sign-in needed — enter your name, select the times that work, and save.
               </p>
               <button
                 type="button"
@@ -293,6 +292,29 @@ export default function RespondPage() {
               >
                 {event.locked ? 'Form is locked' : 'I’m new — add my availability'}
               </button>
+              {!event.locked &&
+                (session ? (
+                  <p className="hint">
+                    Signed in as {session.user.email} — when you save, you can lock your
+                    response to your account so only you can change it.
+                  </p>
+                ) : (
+                  <details className="section" style={{ boxShadow: 'none' }}>
+                    <summary>
+                      Prefer to sign in first?{' '}
+                      <span className="sub">optional — protects your response</span>
+                    </summary>
+                    <div className="section-body">
+                      <p className="hint">
+                        Responding without signing in works fine. Signing in adds two
+                        things: you can lock your response to your account, so nobody
+                        else with the link can change it, and you can create events of
+                        your own.
+                      </p>
+                      <AuthPanel />
+                    </div>
+                  </details>
+                ))}
             </>
           )}
           {visible && (data.responses || []).filter((r) => !r.mine).length > 0 && !event.locked && (
@@ -306,10 +328,7 @@ export default function RespondPage() {
                   .map((r) => (
                     <li key={r.id}>
                       <button type="button" onClick={() => openEntry(r)}>
-                        <span className="who">
-                          {r.name}
-                          {r.claimed ? ' 🔗' : ''}
-                        </span>{' '}
+                        <span className="who">{r.name}</span>{' '}
                         <span className="meta">
                           updated {DateTime.fromISO(r.updated_at).toRelative()}
                           {r.claimed ? ' · linked to an account' : ''}
@@ -399,7 +418,7 @@ export default function RespondPage() {
         )}
         {drift && (
           <div className="banner">
-            ⚠️ A daylight-saving change falls between these dates, so times in{' '}
+            A daylight-saving change falls between these dates, so times in{' '}
             {zones.map(zoneLabel).join(' / ')} shift on some days. Row labels follow the first
             date; hover or long-press a cell for its exact time.
           </div>

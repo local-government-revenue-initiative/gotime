@@ -5,8 +5,7 @@
  * tallies recompute from whatever subset is selected.
  *
  * A filter is just a Set of included response ids; these helpers work out
- * which ids a quick-filter (a question answer, or a position/organization
- * value) selects.
+ * which ids a quick-filter (a question answer) selects.
  */
 
 /** Responses whose id is in `included`. An empty/absent set means "all". */
@@ -18,13 +17,13 @@ export function applyFilter(responses, included) {
 /**
  * Quick-filter groups available for these responses.
  * questions: organizer-defined questions (single/multi only — free text has
- * no fixed options to group by).
- * includeContactFields: true only for organizers, who alone receive
- * position_title / organization.
+ * no fixed options to group by). Grouping by respondent contact fields ended
+ * when the fields did — an organizer who wants to slice by role or
+ * organization asks a question for it, and gets the group here for free.
  *
  * Returns [{ key, label, options: [{ value, ids: [responseId] }] }]
  */
-export function filterGroups(responses, questions, includeContactFields) {
+export function filterGroups(responses, questions) {
   const groups = [];
 
   for (const q of questions || []) {
@@ -44,24 +43,6 @@ export function filterGroups(responses, questions, includeContactFields) {
     if (options.length) groups.push({ key: `q:${q.id}`, label: q.label, options });
   }
 
-  if (includeContactFields) {
-    for (const [field, label] of [
-      ['position_title', 'Position / title'],
-      ['organization', 'Organization'],
-    ]) {
-      const byValue = new Map();
-      for (const r of responses) {
-        const v = (r[field] || '').trim();
-        if (!v) continue;
-        if (!byValue.has(v)) byValue.set(v, []);
-        byValue.get(v).push(r.id);
-      }
-      const options = [...byValue.entries()]
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([value, ids]) => ({ value, ids }));
-      if (options.length) groups.push({ key: `f:${field}`, label, options });
-    }
-  }
 
   return groups;
 }
