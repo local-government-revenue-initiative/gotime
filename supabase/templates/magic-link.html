@@ -1,0 +1,43 @@
+<!-- Go Time — "Magic Link" auth email template (paste into Supabase:
+     Authentication → Emails → Templates → Magic Link).
+     Suggested subject: Sign in to Go Time
+
+     Table-based layout and inline styles because email clients ignore
+     stylesheets; the mark is reproduced as a 3×3 table so it renders without
+     images (remote images are blocked by default in most clients). -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F7;padding:24px 0;">
+  <tr><td align="center">
+    <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#FFFFFF;border-radius:8px;padding:32px;font-family:'Avenir LT','Avenir',system-ui,'Segoe UI',Roboto,sans-serif;color:#1E1B1D;font-size:16px;line-height:1.5;">
+      <tr><td style="padding-bottom:20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td valign="middle" style="padding-right:10px;">
+            <table role="presentation" cellpadding="0" cellspacing="2">
+              <tr><td width="8" height="8" style="background:#D1D4DE;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#D1D4DE;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#009E47;font-size:0;line-height:0;">&nbsp;</td></tr>
+              <tr><td width="8" height="8" style="background:#D1D4DE;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#FFC70A;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#D1D4DE;font-size:0;line-height:0;">&nbsp;</td></tr>
+              <tr><td width="8" height="8" style="background:#1A2E5A;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#D1D4DE;font-size:0;line-height:0;">&nbsp;</td><td width="8" height="8" style="background:#47BFAF;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+          <td valign="middle" style="font-size:20px;color:#1A2E5A;letter-spacing:-0.02em;"><strong>Go</strong> Time</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="font-size:20px;font-weight:bold;color:#1A2E5A;padding-bottom:10px;">Sign in to Go Time</td></tr>
+      <tr><td style="padding-bottom:16px;">
+        You (or someone using your email address) asked to sign in to Go Time,
+        the event scheduling tool at
+        <a href="{{ .SiteURL }}" style="color:#304D9B;">its-go-time.vercel.app</a>.
+        Use the button below to finish signing in — no password needed.
+      </td></tr>
+      <tr><td style="padding:4px 0 20px;">
+        <a href="{{ .ConfirmationURL }}"
+           style="display:inline-block;background:#304D9B;color:#FFFFFF;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:6px;">
+          Sign in to Go Time</a>
+      </td></tr>
+      <tr><td style="font-size:13px;color:#6B6769;border-top:1px solid #E4E2E3;padding-top:16px;">
+        The link works once and expires after an hour. If you didn't request
+        it, you can ignore this email — nothing happens unless the link is
+        opened. This message was sent to {{ .Email }} because that address was
+        entered on the Go Time sign-in page.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
