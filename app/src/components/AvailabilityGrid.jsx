@@ -171,7 +171,11 @@ export default function AvailabilityGrid({
               {labelSets.map((set, zi) => (
                 <div
                   key={'tl' + zi}
-                  className={'timelabel' + (primaryLabels[r].hourline ? ' hourline' : '')}
+                  className={
+                    'timelabel' +
+                    (primaryLabels[r].hourline ? ' hourline' : '') +
+                    (r === 0 ? ' row-first' : '')
+                  }
                 >
                   {set[r].label || '·'}
                 </div>
@@ -179,8 +183,9 @@ export default function AvailabilityGrid({
               {grid.columns.map((col, ci) => {
                 const key = col.keys[r];
                 const hourClass = primaryLabels[r].hourline ? ' hourline' : '';
+                const firstClass = r === 0 ? ' row-first' : '';
                 if (key === null) {
-                  return <div key={'c' + ci} className={'cell gap' + hourClass} />;
+                  return <div key={'c' + ci} className={'cell gap' + hourClass + firstClass} />;
                 }
                 if (mode === 'edit') {
                   const v = Number(availability?.[key]) || 0;
@@ -192,7 +197,11 @@ export default function AvailabilityGrid({
                       type="button"
                       data-key={key}
                       className={
-                        'cell' + (c.striped ? ' striped' : '') + hourClass + (busy ? ' busy' : '')
+                        'cell' +
+                        (c.striped ? ' striped' : '') +
+                        hourClass +
+                        firstClass +
+                        (busy ? ' busy' : '')
                       }
                       style={{ backgroundColor: c.bg }}
                       aria-label={`${formatSlotInZone(key, zoneList[0])}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
@@ -213,7 +222,7 @@ export default function AvailabilityGrid({
                     key={'c' + ci}
                     type="button"
                     data-key={key}
-                    className={'hcell' + hourClass + (selectedKey === key ? ' selected' : '')}
+                    className={'hcell' + hourClass + firstClass + (selectedKey === key ? ' selected' : '')}
                     style={
                       s.score > 0
                         ? {

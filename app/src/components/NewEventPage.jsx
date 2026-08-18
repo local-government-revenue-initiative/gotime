@@ -125,7 +125,7 @@ export default function NewEventPage() {
         </div>
 
         <div className="card">
-          <h2>What are you scheduling?</h2>
+          <h2>Time slot or a whole day?</h2>
           <div className="radio">
             <input
               type="radio"
@@ -135,7 +135,7 @@ export default function NewEventPage() {
               onChange={() => setGranularity('time')}
             />
             <label htmlFor="gran-time" style={{ margin: 0, fontWeight: 400 }}>
-              A meeting at a time of day
+              An event at a time of day
               <span className="sub">
                 Respondents pick time slots (e.g. 30-minute slots) on the dates below.
               </span>

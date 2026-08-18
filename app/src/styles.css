@@ -163,7 +163,7 @@ legend { font-weight: 600; font-size: 0.95rem; padding: 0 4px; color: var(--ink)
   font-weight: 400; margin: 8px 0;
 }
 .checkbox input, .radio input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; }
-.checkbox .sub { display: block; color: var(--muted); font-size: 0.86rem; }
+.checkbox .sub, .radio .sub { display: block; color: var(--muted); font-size: 0.86rem; }
 
 details.section {
   border: 1px solid var(--line);
@@ -371,9 +371,20 @@ details.section > .section-body { padding: 0 16px 14px; }
   color: var(--muted);
   text-align: right;
   padding-right: 6px;
-  align-self: center;
   line-height: 1.1;
   white-space: nowrap;
+  /* A time marks the moment a slot begins, so the label sits on the line
+     between two slots rather than in the middle of one — the way a calendar
+     reads. align-self: start puts it at the row's top edge; the half-height
+     shift centres it on that edge. */
+  align-self: start;
+  transform: translateY(-50%);
+}
+/* The top row's line is the top of the grid itself, so its row is nudged down
+   to leave the label somewhere to sit — without rising into the sticky day
+   header, which would paint over it. */
+.grid .timelabel.row-first, .grid .cell.row-first, .grid .hcell.row-first {
+  margin-top: 9px;
 }
 .grid .zonehead {
   font-size: 0.7rem;
