@@ -1,58 +1,96 @@
-# Branded sign-in emails (one-time dashboard setup)
+# Sign-in email deliverability — the domain-alignment setup
 
-By default Supabase sends sign-in links as **"Supabase Auth
-<noreply@mail.app.supabase.io>"** with generic copy that never mentions
-Go Time — which reads as phishing to anyone who doesn't know what Supabase
-is. Two dashboard changes fix both halves. Neither requires code; the
-templates live in `supabase/templates/`.
+## Why this design
 
-Both are made at https://supabase.com/dashboard → project **gotime**.
+The first attempt at branded sign-in emails (custom SMTP from
+`signin@evan-trowbridge.com`) was silently withheld by University of
+Toronto's mail filtering — accepted on delivery, then never surfaced in
+inbox, junk, or user-visible quarantine, for two different recipients —
+while Supabase's default sender got through. U of T IT is not responsive,
+so the design has to stop looking like phishing rather than rely on
+allowlisting. Resend's own analysis flagged the cause: **the links in the
+email didn't match the sending domain** (sender `evan-trowbridge.com`,
+button `…supabase.co`, app `…vercel.app`).
 
-## 1. Send from your own domain (Resend SMTP)
+The fix aligns all three on one domain, and fences Go Time's sending
+reputation off from the personal mail that has used the root domain for
+years:
 
-Resend already sends the organizer notifications from
-`evan-trowbridge.com`, and the same account can carry the auth emails —
-no new DNS records needed.
+| Piece | Domain |
+|---|---|
+| App | `gotime.evan-trowbridge.com` (Vercel custom domain) |
+| Every link in the email | `gotime.evan-trowbridge.com` (the button goes to the app's `/auth/confirm` route, which completes the sign-in — the `…supabase.co` URL no longer appears anywhere) |
+| Sender | `signin@gotime.evan-trowbridge.com` via Resend |
 
-1. In **Resend** (resend.com): API Keys → Create API key, e.g.
-   `gotime-auth-smtp`, permission "Sending access". Copy it. (Reusing the
-   existing key also works; a separate one is easier to revoke.)
-2. In **Supabase**: Project Settings → **Authentication** (or Auth →
-   SMTP Settings, the dashboard moves this around) → **SMTP Settings** →
-   enable **Custom SMTP**, then:
-   - Sender email: `signin@evan-trowbridge.com`
-   - Sender name: `Go Time`
-   - Host: `smtp.resend.com`
-   - Port: `465`
-   - Username: `resend`
-   - Password: the Resend API key
-3. Save.
+The `/auth/confirm` route ships in the app (v1.9.0). Everything else is
+one-time dashboard/DNS setup, in this order:
 
-The address doesn't need a mailbox — it only sends. Bonus: custom SMTP
-also lifts Supabase's built-in cap of ~2 auth emails per hour, which
-matters the first time several colleagues sign in at once.
+## 1. Vercel — serve the app from the subdomain
 
-## 2. Replace the email templates
+1. vercel.com → project **gotime** → Settings → **Domains** → Add →
+   `gotime.evan-trowbridge.com`.
+2. Vercel shows the required record. At Network Solutions (Manage Advanced
+   DNS Records) add: **CNAME**, host `gotime`, value
+   `cname.vercel-dns.com`, TTL 1 hour.
+3. Wait until Vercel shows the domain as Valid and
+   https://gotime.evan-trowbridge.com loads the app.
+   `its-go-time.vercel.app` keeps working throughout — old shared links
+   never break.
 
-Authentication → **Emails** (→ Templates):
+## 2. Resend — verify the sending subdomain
 
-| Template | Subject | Body |
-|---|---|---|
-| **Magic Link** | `Sign in to Go Time` | paste `supabase/templates/magic-link.html` |
-| **Confirm signup** | `Confirm your Go Time account` | paste `supabase/templates/confirm-signup.html` |
+1. resend.com → Domains → **Add domain** → `gotime.evan-trowbridge.com`
+   (same region as the existing domain).
+2. Add the DNS records it lists at Network Solutions — they'll be for
+   hosts like `send.gotime` (MX + TXT) and `resend._domainkey.gotime`
+   (TXT). These don't conflict with the CNAME from step 1.
+3. Click Verify and wait for green.
 
-Both templates say who is writing and why ("you asked to sign in to
-Go Time, the event scheduling tool at its-go-time.vercel.app"), carry the
-logo (drawn as a table so it renders with images blocked), and end with
-the honest footer: the link works once, expires after an hour, and doing
-nothing is safe. `{{ .ConfirmationURL }}`, `{{ .SiteURL }}` and
-`{{ .Email }}` are Supabase template variables — leave them as-is.
+## 3. Supabase — point auth at the new domain
 
-Go Time only ever uses magic links, so the other templates (password
-reset, invite, change email) are never sent and can stay default.
+Dashboard → project **gotime** → Authentication:
 
-## 3. Check it
+1. **URL Configuration**: set Site URL to
+   `https://gotime.evan-trowbridge.com`; under Redirect URLs make sure the
+   list has BOTH `https://gotime.evan-trowbridge.com/**` and
+   `https://its-go-time.vercel.app/**` (the old domain stays valid).
+2. **SMTP Settings** (under Project Settings → Authentication): Custom
+   SMTP on, sender email `signin@gotime.evan-trowbridge.com`, sender name
+   `Go Time`, host `smtp.resend.com`, port `465`, username `resend`,
+   password = the Resend API key.
+3. **Emails → Templates**: re-paste both templates from
+   `supabase/templates/` (their buttons now link through
+   `/auth/confirm`). Subjects: Magic Link `Sign in to Go Time`; Confirm
+   signup `Confirm your Go Time account`. Do step 3 only after step 1 —
+   the button URL is built from the Site URL.
 
-Sign out at its-go-time.vercel.app, request a sign-in link, and confirm
-the email arrives from **Go Time <signin@evan-trowbridge.com>** with the
-branded body. First time only, also look in spam — then "Not spam" it.
+## 4. Edge-function secrets (organizer notifications)
+
+Supabase → Edge Functions → Secrets: set `APP_ORIGIN` to
+`https://gotime.evan-trowbridge.com` and (to fence the root domain
+completely) `NOTIFY_FROM` to
+`Go Time <notifications@gotime.evan-trowbridge.com>`.
+
+## 5. Check it
+
+1. Open https://gotime.evan-trowbridge.com, request a sign-in link.
+2. The email should come from **signin@gotime.evan-trowbridge.com** and
+   every URL in it (hover the button) should start with
+   `https://gotime.evan-trowbridge.com/`.
+3. The button should sign you in and return you to the page you started on.
+4. Then the real test: a `utoronto.ca` address.
+
+## Fallback
+
+If strict filters still withhold it, the zero-risk fallback is turning
+Custom SMTP off: Supabase's default sender (`noreply@mail.app.supabase.io`)
+demonstrably reaches U of T, and the branded templates still apply — only
+the From line is generic. Its limits: a very low project-wide hourly email
+cap and best-effort delivery, so it's a fallback rather than the plan.
+
+## DMARC status (root domain)
+
+`_dmarc.evan-trowbridge.com` is `v=DMARC1; p=none; rua=mailto:edtrowbridge@gmail.com`.
+Keep `p=none` unless weeks of aggregate reports show the personal
+`evan@evan-trowbridge.com` stream passing DMARC — it sends through the
+web host and may not be aligned; an enforced policy could quarantine it.

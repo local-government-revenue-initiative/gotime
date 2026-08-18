@@ -4,6 +4,7 @@ import { getSupabase, isSupabaseConfigured } from './supabaseClient.js';
 import LandingPage from './components/LandingPage.jsx';
 import NewEventPage from './components/NewEventPage.jsx';
 import RespondPage from './components/RespondPage.jsx';
+import AuthConfirmPage from './components/AuthConfirmPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
 import ManagePage from './components/ManagePage.jsx';
 
@@ -50,6 +51,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/new" element={<NewEventPage />} />
+        <Route path="/auth/confirm" element={<AuthConfirmPage />} />
         <Route path="/e/:token" element={<RespondPage />} />
         <Route path="/e/:token/results" element={<ResultsPage />} />
         <Route path="/e/:token/manage" element={<ManagePage />} />

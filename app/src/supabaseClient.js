@@ -66,6 +66,8 @@ export function friendlyError(error) {
     return 'The organizer has not enabled date suggestions for this event.';
   if (/not_found/i.test(message))
     return 'This event could not be found — check that the link is complete.';
+  if (/invalid or has expired|otp_expired|token has expired/i.test(message))
+    return 'This sign-in link has expired or was already used — they work once, for an hour. Request a new one.';
   if (/not_organizer/i.test(message))
     return 'Only an organizer of this event can do that.';
   // Calendar overlay (fetch-ics edge function)

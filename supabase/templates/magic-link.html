@@ -2,6 +2,11 @@
      Authentication → Emails → Templates → Magic Link).
      Suggested subject: Sign in to Go Time
 
+     IMPORTANT: the button links to {{ .SiteURL }}/auth/confirm, so the
+     Supabase Auth "Site URL" must be https://gotime.evan-trowbridge.com
+     before pasting this version — with the old Site URL the button would
+     point at the old domain.
+
      Table-based layout and inline styles because email clients ignore
      stylesheets; the mark is reproduced as a 3×3 table so it renders without
      images (remote images are blocked by default in most clients). -->
@@ -24,11 +29,11 @@
       <tr><td style="padding-bottom:16px;">
         You (or someone using your email address) asked to sign in to Go Time,
         the event scheduling tool at
-        <a href="{{ .SiteURL }}" style="color:#304D9B;">its-go-time.vercel.app</a>.
+        <a href="{{ .SiteURL }}" style="color:#304D9B;">gotime.evan-trowbridge.com</a>.
         Use the button below to finish signing in — no password needed.
       </td></tr>
       <tr><td style="padding:4px 0 20px;">
-        <a href="{{ .ConfirmationURL }}"
+        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}"
            style="display:inline-block;background:#304D9B;color:#FFFFFF;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:6px;">
           Sign in to Go Time</a>
       </td></tr>
