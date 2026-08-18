@@ -23,6 +23,9 @@ import {
   setMyEntryCache,
 } from '../lib/localIdentity.js';
 
+/* phone / position_title / organization are no longer collected — organizers
+   who want them add their own question. They stay in the shape (and in the
+   payload) so answers given before the inputs were removed survive an edit. */
 const EMPTY_FIELDS = { name: '', email: '', phone: '', position_title: '', organization: '' };
 
 export default function RespondPage() {
@@ -364,57 +367,7 @@ export default function RespondPage() {
             autoComplete="email"
           />
         </label>
-        <p className="hint">Your email and phone are only visible to the organizers.</p>
-        <details className="section" style={{ boxShadow: 'none' }}>
-          <summary>
-            More about you <span className="sub">phone (WhatsApp), position, organization — optional</span>
-          </summary>
-          <div className="section-body">
-            <label htmlFor="f-phone">
-              Phone number (for WhatsApp)
-              <input
-                id="f-phone"
-                type="tel"
-                value={fields.phone}
-                maxLength={50}
-                placeholder="+232 …"
-                onChange={(e) => {
-                  setFields({ ...fields, phone: e.target.value });
-                  setDirty(true);
-                }}
-                autoComplete="tel"
-              />
-            </label>
-            <label htmlFor="f-position">
-              Position / title
-              <input
-                id="f-position"
-                type="text"
-                value={fields.position_title}
-                maxLength={120}
-                onChange={(e) => {
-                  setFields({ ...fields, position_title: e.target.value });
-                  setDirty(true);
-                }}
-                autoComplete="organization-title"
-              />
-            </label>
-            <label htmlFor="f-org">
-              Organization
-              <input
-                id="f-org"
-                type="text"
-                value={fields.organization}
-                maxLength={200}
-                onChange={(e) => {
-                  setFields({ ...fields, organization: e.target.value });
-                  setDirty(true);
-                }}
-                autoComplete="organization"
-              />
-            </label>
-          </div>
-        </details>
+        <p className="hint">Your email is only visible to the organizers.</p>
         {session && (
           <div className="checkbox">
             <input

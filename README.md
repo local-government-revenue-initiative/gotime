@@ -33,8 +33,11 @@ configured in the UI, using the Vercel + Supabase setup proven in
 - Full response table with contact details, CSV export, spam deletion
 
 **Respondents** (no account needed):
-- Enter name + email (phone/WhatsApp, position, organization optional —
-  contact details are only ever shown to organizers)
+- Enter name + email (only ever shown to organizers). Nothing else is asked
+  for by default — an organizer who wants a phone number, job title or
+  organization adds a question for it, so no event carries fields it doesn't
+  use. The `responses` table keeps those columns, and the results filter can
+  still group by them, for events answered before the fields were dropped.
 - Paint availability per slot: pick a level, tap or drag across the grid
 - Return later on the same device and continue automatically; or open your
   entry from the list on another device (with an "is this you?" confirmation,
