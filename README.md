@@ -38,9 +38,12 @@ configured in the UI, using the Vercel + Supabase setup proven in
   a question for it, so no event carries fields it doesn't use, and the
   answers show up in the question tallies and result filters like any other.
 - Respond straight away with no sign-in, or sign in first (optional, offered
-  on the event page): a signed-in respondent can lock their response to their
-  account so nobody else with the link can edit it, and can create events of
-  their own.
+  on the event page). Signing in adds three things: no one else can edit your
+  response, the events you've responded to are listed on your Go Time home
+  page (via the `list_my_responses` RPC — claimed responses only, excluding
+  events you organize), and you can organize events of your own. For
+  signed-in respondents the "link to my account" box is pre-ticked on their
+  own entries — never on someone else's.
 - Paint availability per slot: pick a level, tap or drag across the grid
 - Return later on the same device and continue automatically; or open your
   entry from the list on another device (with an "is this you?" confirmation,

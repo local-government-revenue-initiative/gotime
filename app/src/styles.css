@@ -589,3 +589,7 @@ details.section > .section-body { padding: 0 16px 14px; }
   .grid-scroll { overflow-x: visible; }
   .grid .dayhead { top: var(--dayhead-top, 0); }
 }
+
+/* sign-in benefits on the respond page */
+.benefit-list { margin: 4px 0 10px; padding-left: 20px; }
+.benefit-list li { margin: 2px 0; }

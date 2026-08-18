@@ -228,6 +228,15 @@ export async function removeOrganizer(eventId, userId) {
   );
 }
 
+/**
+ * Events the signed-in user has responded to (their claimed responses),
+ * newest first — excluding events they organize, which listMyEvents covers.
+ */
+export async function listMyResponses() {
+  const supabase = await client();
+  return unwrap(await supabase.rpc('list_my_responses')) || [];
+}
+
 export async function getMyProfile() {
   const supabase = await client();
   const { data } = await supabase.auth.getUser();

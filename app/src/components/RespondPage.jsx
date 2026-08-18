@@ -165,7 +165,9 @@ export default function RespondPage() {
     setAnswers(resp?.answers ? { ...resp.answers } : (getMyEntryCache(token)?.answers && !resp?.id ? {} : {}));
     setAvailability(resp?.availability ? { ...resp.availability } : {});
     setBrush(defaultBrush);
-    setClaim(false);
+    // Default to linking only for entries that are genuinely this user's —
+    // opening a teammate's unclaimed entry must never claim it by default.
+    setClaim(Boolean(session) && (!resp?.id || isMine));
     setDirty(false);
     setSavedAt(null);
     setView('edit');
@@ -183,7 +185,7 @@ export default function RespondPage() {
     setAnswers({});
     setAvailability({});
     setBrush(defaultBrush);
-    setClaim(false);
+    setClaim(Boolean(session));
     setDirty(false);
     setSavedAt(null);
     setView('edit');
@@ -290,13 +292,14 @@ export default function RespondPage() {
                 onClick={startNew}
                 disabled={event.locked}
               >
-                {event.locked ? 'Form is locked' : 'I’m new — add my availability'}
+                {event.locked ? 'Form is locked' : 'Add my availability'}
               </button>
               {!event.locked &&
                 (session ? (
                   <p className="hint">
-                    Signed in as {session.user.email} — when you save, you can lock your
-                    response to your account so only you can change it.
+                    Signed in as {session.user.email} — your response will be linked to
+                    your account, so only you can edit it and the event appears in your
+                    list.
                   </p>
                 ) : (
                   <details className="section" style={{ boxShadow: 'none' }}>
@@ -306,11 +309,14 @@ export default function RespondPage() {
                     </summary>
                     <div className="section-body">
                       <p className="hint">
-                        Responding without signing in works fine. Signing in adds two
-                        things: you can lock your response to your account, so nobody
-                        else with the link can change it, and you can create events of
-                        your own.
+                        Responding without signing in works fine. Signing in adds three
+                        things:
                       </p>
+                      <ul className="hint benefit-list">
+                        <li>No one else can edit your response.</li>
+                        <li>You can see all the events you’ve responded to while signed in.</li>
+                        <li>You can organize your own events.</li>
+                      </ul>
                       <AuthPanel />
                     </div>
                   </details>
@@ -346,7 +352,7 @@ export default function RespondPage() {
             </p>
           )}
         </div>
-        <Comments data={data} token={token} onPosted={reload} showToast={showToast} />
+
         {toast}
       </Layout>
     );
@@ -399,8 +405,11 @@ export default function RespondPage() {
               }}
             />
             <label htmlFor="f-claim" style={{ margin: 0, fontWeight: 400 }}>
-              Lock this response to my account ({session.user.email})
-              <span className="sub">Once linked, only you (signed in) can edit it.</span>
+              Link this response to my account ({session.user.email})
+              <span className="sub">
+                Only you (signed in) can edit it, and the event shows up on your Go Time
+                home page. Untick if teammates should be able to update it for you.
+              </span>
             </label>
           </div>
         )}
