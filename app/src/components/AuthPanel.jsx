@@ -44,7 +44,8 @@ export default function AuthPanel({ intro }) {
     return (
       <div className="banner banner-info">
         Check your inbox — we sent a sign-in link to <strong>{email}</strong>. Opening it brings
-        you back here, signed in. (No email? Check spam, or try again in a minute.)
+        you back here, signed in. (No email? Check spam. The message will have "Go Time" as the
+        sender and "signin@gotime.evan-trowbridge.com" as the sender's email address.)
       </div>
     );
   }
