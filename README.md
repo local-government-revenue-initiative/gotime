@@ -3,7 +3,8 @@
 A tool for finding a time for meetings — across time zones, with no account
 needed to respond.
 
-**Live app:** https://its-go-time.vercel.app
+**Live app:** https://gotime.evan-trowbridge.com
+(`its-go-time.vercel.app` still works, so links shared before the move don't break.)
 
 Organizers create an event (title, candidate dates, timeslot size, optional
 extra questions), share one link, and respondents paint the times that work
@@ -150,9 +151,11 @@ this repository, so the full app cannot deploy until access is granted:
 ### One-time auth setup (magic links)
 
 In the Supabase dashboard → Authentication → URL Configuration:
-1. Set **Site URL** to `https://its-go-time.vercel.app`
-2. Add **Redirect URLs**: `https://its-go-time.vercel.app/**` and
-   `http://localhost:5173/**`
+1. Set **Site URL** to `https://gotime.evan-trowbridge.com` — the sign-in
+   email's button URL is built from this, so it must be the app's own domain
+   (see `docs/auth-email-setup.md` for why that matters).
+2. Add **Redirect URLs**: `https://gotime.evan-trowbridge.com/**`,
+   `https://its-go-time.vercel.app/**` and `http://localhost:5173/**`
 
 Without this, sign-in emails redirect to the default localhost URL.
 
@@ -178,7 +181,7 @@ One-time setup:
    - `RESEND_API_KEY` — the Resend API key
    - `NOTIFY_FROM` — e.g. `Go Time <notifications@evan-trowbridge.com>`
    - `NOTIFY_SECRET` — must equal `private.config.notify_secret` in the DB
-   - `APP_ORIGIN` (optional) — `https://its-go-time.vercel.app`
+   - `APP_ORIGIN` (optional) — `https://gotime.evan-trowbridge.com`
 3. The `notify-organizers` function and the DB trigger are already deployed
    (`supabase/functions/notify-organizers/`, migration `20260816120000_notifications.sql`).
 

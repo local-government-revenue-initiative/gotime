@@ -1,5 +1,38 @@
 # Sign-in email deliverability — the domain-alignment setup
 
+## Status: done and verified (19 Aug 2026)
+
+A branded sign-in email now reaches `utoronto.ca` inboxes — the failure that
+prompted all of this. Final configuration:
+
+| Piece | Value |
+|---|---|
+| App | `https://gotime.evan-trowbridge.com` (Vercel; `its-go-time.vercel.app` still works) |
+| Sender | `Go Time <signin@gotime.evan-trowbridge.com>` via Resend SMTP |
+| Email links | `https://gotime.evan-trowbridge.com/auth/confirm?token_hash=…` — no `supabase.co` anywhere |
+| Supabase Site URL | `https://gotime.evan-trowbridge.com` |
+
+**The DNS detail worth remembering:** Vercel asks for a CNAME
+(`gotime` → `…vercel-dns-017.com`), but this zone has a wildcard `*` A record
+pointing at the Network Solutions web host. Network Solutions answered some
+queries with the wildcard instead of following the CNAME, so resolution was
+inconsistent worldwide, the Let's Encrypt http-01 challenge failed, and the
+subdomain intermittently redirected to the main site. The fix was an explicit
+**A record `gotime` → `76.76.21.21`** (Vercel's documented legacy address)
+instead of the CNAME — an explicit A record beats a wildcard unambiguously.
+Vercel shows "DNS Change Recommended" for this, which is only a nudge toward
+its newer CNAME; do not act on it. Deleting the wildcard would also have
+worked, but `www.evan-trowbridge.com` depends on it.
+
+A cached permanent redirect from the broken window then persisted in already-
+affected browsers; clearing cached files fixes it, and it never affected
+anyone who hadn't visited during that window.
+
+Remaining optional cleanup: remove the now-unused root-domain Resend records
+(TXT `resend._domainkey`, MX `send`, TXT `send`) and the root domain from
+Resend's dashboard. Keep TXT `_dmarc` (it covers subdomains too) and the
+root `@` SPF (that's the personal mailbox's, not Resend's).
+
 ## Why this design
 
 The first attempt at branded sign-in emails (custom SMTP from
@@ -29,9 +62,9 @@ one-time dashboard/DNS setup, in this order:
 
 1. vercel.com → project **gotime** → Settings → **Domains** → Add →
    `gotime.evan-trowbridge.com`.
-2. Vercel shows the required record. At Network Solutions (Manage Advanced
-   DNS Records) add: **CNAME**, host `gotime`, value
-   `cname.vercel-dns.com`, TTL 1 hour.
+2. At Network Solutions (Manage Advanced DNS Records) add: **A**, host
+   `gotime`, value `76.76.21.21`, TTL 1 hour. Use the A record, not the
+   CNAME Vercel suggests — see the DNS note above.
 3. Wait until Vercel shows the domain as Valid and
    https://gotime.evan-trowbridge.com loads the app.
    `its-go-time.vercel.app` keeps working throughout — old shared links
