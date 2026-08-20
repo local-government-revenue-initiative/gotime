@@ -264,7 +264,7 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {tallies.length > 0 && responses.length > 0 && (
+      {data.is_organizer && tallies.length > 0 && responses.length > 0 && (
         <div className="card">
           <h2>Question results</h2>
           {tallies.map(({ question: q, counts, texts, answered }) => (
@@ -303,17 +303,14 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {responses.length > 0 && (
+      {data.is_organizer && responses.length > 0 && (
         <div className="card">
           <h2>Individual responses</h2>
           {responses.map((r) => {
             const painted = Object.entries(r.availability || {}).filter(([, v]) => v > 0);
             return (
               <div className="q-row" key={r.id}>
-                <h3>
-                  {r.name}
-                  {r.claimed ? ' 🔗' : ''}
-                </h3>
+                <h3>{r.name}</h3>
                 <p className="hint" style={{ margin: '2px 0 6px' }}>
                   {painted.length === 0
                     ? 'No available times selected.'
@@ -362,7 +359,18 @@ function RespondentFilter({ responses, groups, included, onChange }) {
     onChange(next.size === allIds.length ? null : next);
   }
 
-  function selectOnly(ids) {
+  /** Is the current selection exactly this option's people? */
+  function isOnly(ids) {
+    const cur = included ?? new Set(allIds);
+    return cur.size === ids.length && ids.every((id) => cur.has(id));
+  }
+
+  /** Click a quick filter to select exactly its people; click again to undo. */
+  function toggleOnly(ids) {
+    if (isOnly(ids)) {
+      onChange(null);
+      return;
+    }
     const set = new Set(ids);
     onChange(set.size === allIds.length ? null : set);
   }
@@ -390,7 +398,8 @@ function RespondentFilter({ responses, groups, included, onChange }) {
                       key={opt.value}
                       type="button"
                       className="chip"
-                      onClick={() => selectOnly(opt.ids)}
+                      aria-pressed={isOnly(opt.ids)}
+                      onClick={() => toggleOnly(opt.ids)}
                     >
                       {opt.value} ({opt.ids.length})
                     </button>
