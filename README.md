@@ -30,6 +30,9 @@ configured in the UI, using the Vercel + Supabase setup proven in
   names anonymized ("Respondent 1, 2, …") to non-organizers
 - Co-organizers: search registered users by email/name and add them
 - Lock the form to freeze all responses, comments and suggestions
+- Archive a finished event to keep it out of the events list (reversible;
+  the link, responses and results are unaffected), or — for the event's
+  creator only — delete it outright, cascading to responses and comments
 - Optionally let respondents suggest extra dates (suggestions need approval)
 - Full response table with contact details, CSV export, spam deletion
 

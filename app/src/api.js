@@ -85,7 +85,7 @@ export async function listMyEvents() {
   const rows = unwrap(
     await supabase
       .from('events')
-      .select('id, token, title, locked, created_at, event_dates(date)')
+      .select('id, token, title, locked, archived, created_at, event_dates(date)')
       .order('created_at', { ascending: false }),
   );
   return rows || [];
@@ -137,6 +137,11 @@ export async function updateEvent(eventId, patch) {
   );
 }
 
+/**
+ * Permanently delete an event and everything attached to it (dates,
+ * questions, responses, comments, co-organizers all cascade). RLS allows
+ * this only for the event's owner, not co-organizers.
+ */
 export async function deleteEvent(eventId) {
   const supabase = await client();
   unwrap(await supabase.from('events').delete().eq('id', eventId));

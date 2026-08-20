@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import Layout from './Layout.jsx';
 import AuthPanel from './AuthPanel.jsx';
@@ -18,6 +18,7 @@ import {
   deleteComment,
   listOrganizers,
   removeOrganizer,
+  deleteEvent,
 } from '../api.js';
 import { friendlyError } from '../supabaseClient.js';
 import { formatSlotInZone, sortSlotKeys } from '../lib/slots.js';
@@ -25,6 +26,7 @@ import { formatSlotInZone, sortSlotKeys } from '../lib/slots.js';
 export default function ManagePage() {
   const { token } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { session, authChecked } = useSession();
   const { data, error, loading, reload } = useEvent(token);
   const [toast, showToast] = useToast();
@@ -33,6 +35,8 @@ export default function ManagePage() {
 
   const event = data?.event;
   const isOrganizer = Boolean(data?.is_organizer);
+  // Deleting is owner-only (RLS enforces it too); the team list carries roles.
+  const isOwner = team.some((m) => m.role === 'owner' && m.user_id === session?.user?.id);
 
   useEffect(() => {
     if (!isOrganizer || !event) return;
@@ -173,6 +177,54 @@ export default function ManagePage() {
         <h2>Settings</h2>
         <SettingsForm event={event} busy={busy} onSave={(fields) => patch(fields, 'Settings saved.')} />
       </div>
+
+      <details className="section">
+        <summary>
+          Archive or delete
+          <span className="sub">
+            {event.archived ? 'this event is archived' : 'tidy up or remove this event'}
+          </span>
+        </summary>
+        <div className="section-body">
+          <div className="checkbox">
+            <input
+              id="mg-archive"
+              type="checkbox"
+              checked={Boolean(event.archived)}
+              disabled={busy}
+              onChange={(e) =>
+                patch(
+                  { archived: e.target.checked },
+                  e.target.checked
+                    ? 'Archived — find it under “Archived events” on your home page.'
+                    : 'Un-archived — back in your events list.',
+                )
+              }
+            />
+            <label htmlFor="mg-archive" style={{ margin: 0, fontWeight: 600 }}>
+              Archive this event
+              <span className="sub">
+                Hides it from your events list to keep the page clear. The link, responses and
+                results all keep working, and you can un-archive at any time. To stop accepting
+                responses, lock the form instead.
+              </span>
+            </label>
+          </div>
+
+          {isOwner ? (
+            <DeleteEvent
+              event={event}
+              responseCount={data.response_count}
+              onDeleted={() => navigate('/', { state: { deleted: event.title } })}
+              onError={(m) => showToast(m)}
+            />
+          ) : (
+            <p className="hint" style={{ marginTop: 14 }}>
+              Only the organizer who created this event can delete it.
+            </p>
+          )}
+        </div>
+      </details>
 
       <div className="card">
         <h2>Dates</h2>
@@ -459,6 +511,59 @@ function ManagedQuestions({ eventId, questions, onSaved, onError }) {
         }}
       >
         Save questions
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Permanent deletion, behind a deliberate second step: the button arms a
+ * confirmation that spells out exactly what disappears, because responses
+ * other people took the trouble to give are not recoverable afterwards.
+ */
+function DeleteEvent({ event, responseCount, onDeleted, onError }) {
+  const [armed, setArmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (!armed) {
+    return (
+      <p style={{ marginTop: 18 }}>
+        <button type="button" className="btn btn-danger" onClick={() => setArmed(true)}>
+          Delete this event
+        </button>
+      </p>
+    );
+  }
+
+  return (
+    <div className="banner banner-error" style={{ marginTop: 18 }}>
+      <p style={{ margin: '0 0 8px' }}>
+        <strong>Delete “{event.title}” permanently?</strong>
+      </p>
+      <p className="hint" style={{ margin: '0 0 10px' }}>
+        This removes the event, its {responseCount} response{responseCount === 1 ? '' : 's'},
+        every comment, and the questions — for everyone, not just you. The share link stops
+        working. This cannot be undone. To simply tidy your list, archive it instead.
+      </p>
+      <button
+        type="button"
+        className="btn btn-danger"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await deleteEvent(event.id);
+            onDeleted();
+          } catch (err) {
+            onError(friendlyError(err));
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? 'Deleting…' : 'Yes, delete permanently'}
+      </button>{' '}
+      <button type="button" className="btn" disabled={busy} onClick={() => setArmed(false)}>
+        Cancel
       </button>
     </div>
   );
