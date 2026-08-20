@@ -11,7 +11,7 @@ import { QUICK_ZONES, allZones, detectZone, displayZoneName } from '../lib/timez
 import { useToast } from '../hooks.jsx';
 import { DateTime } from 'luxon';
 
-const DEFAULT_LEVELS = ['Not available', 'Possible (but inconvenient)', 'Possible (and convenient)'];
+const DEFAULT_LEVELS = ['Not available', 'If need be', 'Available'];
 
 export default function NewEventPage() {
   const { session, authChecked } = useSession();

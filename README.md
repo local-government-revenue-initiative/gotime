@@ -9,8 +9,8 @@ needed to respond.
 Organizers create an event (title, candidate dates, timeslot size, optional
 extra questions), share one link, and respondents paint the times that work
 for them using configurable preference levels (default: *Not available* /
-*Possible (but inconvenient)* / *Possible (and convenient)*). The results page
-combines everyone's answers into a heatmap, ranks the best times, and can
+*If need be* / *Available*). The results page combines everyone's answers
+into a heatmap, ranks the best times, and can
 generate a calendar invite (.ics) for the winning slot.
 
 This replaces the earlier [scheduler](https://github.com/evantrowbridge/scheduler)
