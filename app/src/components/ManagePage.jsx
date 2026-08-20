@@ -178,54 +178,6 @@ export default function ManagePage() {
         <SettingsForm event={event} busy={busy} onSave={(fields) => patch(fields, 'Settings saved.')} />
       </div>
 
-      <details className="section">
-        <summary>
-          Archive or delete
-          <span className="sub">
-            {event.archived ? 'this event is archived' : 'tidy up or remove this event'}
-          </span>
-        </summary>
-        <div className="section-body">
-          <div className="checkbox">
-            <input
-              id="mg-archive"
-              type="checkbox"
-              checked={Boolean(event.archived)}
-              disabled={busy}
-              onChange={(e) =>
-                patch(
-                  { archived: e.target.checked },
-                  e.target.checked
-                    ? 'Archived — find it under “Archived events” on your home page.'
-                    : 'Un-archived — back in your events list.',
-                )
-              }
-            />
-            <label htmlFor="mg-archive" style={{ margin: 0, fontWeight: 600 }}>
-              Archive this event
-              <span className="sub">
-                Hides it from your events list to keep the page clear. The link, responses and
-                results all keep working, and you can un-archive at any time. To stop accepting
-                responses, lock the form instead.
-              </span>
-            </label>
-          </div>
-
-          {isOwner ? (
-            <DeleteEvent
-              event={event}
-              responseCount={data.response_count}
-              onDeleted={() => navigate('/', { state: { deleted: event.title } })}
-              onError={(m) => showToast(m)}
-            />
-          ) : (
-            <p className="hint" style={{ marginTop: 14 }}>
-              Only the organizer who created this event can delete it.
-            </p>
-          )}
-        </div>
-      </details>
-
       <div className="card">
         <h2>Dates</h2>
         <ul className="date-list">
@@ -386,6 +338,53 @@ export default function ManagePage() {
           ))}
         </div>
       )}
+      <details className="section">
+        <summary>
+          Archive or delete
+          <span className="sub">
+            {event.archived ? 'this event is archived' : 'tidy up or remove this event'}
+          </span>
+        </summary>
+        <div className="section-body">
+          <div className="checkbox">
+            <input
+              id="mg-archive"
+              type="checkbox"
+              checked={Boolean(event.archived)}
+              disabled={busy}
+              onChange={(e) =>
+                patch(
+                  { archived: e.target.checked },
+                  e.target.checked
+                    ? 'Archived — find it under “Archived events” on your home page.'
+                    : 'Un-archived — back in your events list.',
+                )
+              }
+            />
+            <label htmlFor="mg-archive" style={{ margin: 0, fontWeight: 600 }}>
+              Archive this event
+              <span className="sub">
+                Hides it from your events list to keep the page clear. The link, responses and
+                results all keep working, and you can un-archive at any time. To stop accepting
+                responses, lock the form instead.
+              </span>
+            </label>
+          </div>
+
+          {isOwner ? (
+            <DeleteEvent
+              event={event}
+              responseCount={data.response_count}
+              onDeleted={() => navigate('/', { state: { deleted: event.title } })}
+              onError={(m) => showToast(m)}
+            />
+          ) : (
+            <p className="hint" style={{ marginTop: 14 }}>
+              Only the organizer who created this event can delete it.
+            </p>
+          )}
+        </div>
+      </details>
       {toast}
     </Layout>
   );
