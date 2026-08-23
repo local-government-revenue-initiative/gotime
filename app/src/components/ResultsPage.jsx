@@ -208,20 +208,17 @@ export default function ResultsPage() {
                 {levels
                   .map((label, i) => ({ label, i, people: detail[i] }))
                   .reverse()
-                  .filter(({ i }) => i > 0)
                   .map(({ label, i, people }) => (
-                    <div key={i}>
-                      <strong>{label}:</strong>{' '}
-                      {people.length ? (
-                        people.map((p) => p.name).join(', ')
-                      ) : (
-                        <span className="none">nobody</span>
-                      )}
-                    </div>
+                    <LevelDetail
+                      key={selectedKey + ':' + i}
+                      label={label}
+                      people={people}
+                      defaultOpen={i > 0}
+                    />
                   ))}
                 {data.is_organizer && (
                   <p style={{ marginTop: 8 }}>
-                    📅 <AddToCalendar slotKey={selectedKey} />
+                    <AddToCalendar slotKey={selectedKey} />
                   </p>
                 )}
               </div>
@@ -340,6 +337,31 @@ export default function ResultsPage() {
         </div>
       )}
     </Layout>
+  );
+}
+
+/**
+ * One preference level in the slot breakdown: the label and head-count are
+ * always visible; the names collapse, since with a big team the list gets
+ * long. "Not available" starts collapsed (it also counts everyone who simply
+ * left the slot unpainted), the positive levels start open. Keyed by slot in
+ * the parent, so each newly selected slot starts from these defaults.
+ */
+function LevelDetail({ label, people, defaultOpen }) {
+  const [open, setOpen] = useState(defaultOpen && people.length > 0);
+  return (
+    <details
+      className="level-detail"
+      open={open}
+      onToggle={(e) => setOpen(e.target.open)}
+    >
+      <summary>
+        <strong>{label}:</strong> {people.length || 'nobody'}
+      </summary>
+      {people.length > 0 && (
+        <div className="level-names">{people.map((p) => p.name).join(', ')}</div>
+      )}
+    </details>
   );
 }
 

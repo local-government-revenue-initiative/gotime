@@ -449,6 +449,24 @@ details.section > .section-body { padding: 0 16px 14px; }
 }
 .hcell.selected { outline: 2px solid var(--ink); }
 
+/* per-level rows in the slot breakdown */
+.level-detail { margin: 2px 0; }
+.level-detail > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.level-detail > summary::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.8em;
+  transition: transform 0.15s;
+}
+.level-detail[open] > summary::before { transform: rotate(90deg); }
+.level-names { margin: 2px 0 6px 16px; }
+
 .slot-detail {
   margin-top: 10px;
   border: 1px solid var(--line);
