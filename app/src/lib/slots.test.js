@@ -112,6 +112,28 @@ describe('zoneLabelDrift', () => {
   });
 });
 
+describe('hour12 display', () => {
+  it('formats slots as AM/PM when asked', () => {
+    expect(formatSlotInZone('2026-09-03T13:30Z', 'UTC', { hour12: true })).toBe(
+      'Thu 3 Sep, 1:30 PM',
+    );
+    expect(formatSlotInZone('2026-09-03T13:30Z', 'UTC', { hour12: true, timeOnly: true })).toBe(
+      '1:30 PM',
+    );
+    // 24-hour stays the default
+    expect(formatSlotInZone('2026-09-03T13:30Z', 'UTC')).toBe('Thu 3 Sep, 13:30');
+  });
+
+  it('row labels follow the clock format', () => {
+    const grid = buildSlotGrid(
+      { timezone: 'UTC', day_start: '13:00', day_end: '14:00', slot_minutes: 30, granularity: 'time' },
+      ['2026-09-03'],
+    );
+    expect(rowLabelsInZone(grid, 'UTC').map((l) => l.label)).toEqual(['13:00', '13:30']);
+    expect(rowLabelsInZone(grid, 'UTC', true).map((l) => l.label)).toEqual(['1:00 PM', '1:30 PM']);
+  });
+});
+
 describe('formatSlotInZone / sortSlotKeys', () => {
   it('formats a key in a zone', () => {
     expect(formatSlotInZone('2026-09-03T13:30Z', 'Europe/London')).toBe('Thu 3 Sep, 14:30');

@@ -5,7 +5,7 @@ import { QUICK_ZONES, allZones, zoneLabel, zoneOffsetLabel, displayZoneName } fr
  * Primary display zone (quick chips + full IANA list) and, optionally, up to
  * two extra zones shown side-by-side on the grid's time axis.
  */
-export default function TimezonePicker({ zone, onZone, extras = [], onExtras, allowExtras = false }) {
+export default function TimezonePicker({ zone, onZone, extras = [], onExtras, allowExtras = false, hour12 = false, onHour12 }) {
   const zones = allZones();
 
   function toggleExtra(z) {
@@ -18,6 +18,26 @@ export default function TimezonePicker({ zone, onZone, extras = [], onExtras, al
       <p className="hint" style={{ fontWeight: 600, margin: '8px 0 2px' }}>
         Show times in — commonly used time zones
       </p>
+      {onHour12 && (
+        <div className="chip-row" role="group" aria-label="Clock format">
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={!hour12}
+            onClick={() => onHour12(false)}
+          >
+            24-hour
+          </button>
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={hour12}
+            onClick={() => onHour12(true)}
+          >
+            AM/PM
+          </button>
+        </div>
+      )}
       <div className="chip-row" role="group" aria-label="Commonly used time zones">
         {QUICK_ZONES.map((q) => (
           <button

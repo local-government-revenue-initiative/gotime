@@ -16,6 +16,7 @@ import { SHOW_CALENDAR_OVERLAY } from '../features.js';
 import { friendlyError } from '../supabaseClient.js';
 import { buildSlotGrid, zoneLabelDrift, parseSlotKey } from '../lib/slots.js';
 import { detectZone, zoneLabel } from '../lib/timezones.js';
+import { loadHour12, storeHour12 } from '../lib/clockFormat.js';
 import {
   getMyResponseId,
   setMyResponseId,
@@ -51,6 +52,11 @@ export default function RespondPage() {
     }
   });
   const [extraZones, setExtraZones] = useState([]);
+  const [hour12, setHour12] = useState(loadHour12);
+  function chooseHour12(v) {
+    setHour12(v);
+    storeHour12(v);
+  }
 
   const event = data?.event;
   const levels = event?.preference_levels || [];
@@ -423,7 +429,7 @@ export default function RespondPage() {
           select the {isDayMode ? 'days' : 'times'} that could work.
         </p>
         {!isDayMode && (
-          <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+          <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras hour12={hour12} onHour12={chooseHour12} />
         )}
         {drift && (
           <div className="banner">
@@ -467,6 +473,7 @@ export default function RespondPage() {
               brush={brush}
               setBrush={setBrush}
               busyKeys={busyKeys}
+              hour12={hour12}
             />
             <p className="hint">
               Times shown in {zoneLabel(zone)}. The event’s own time zone is {event.timezone}.

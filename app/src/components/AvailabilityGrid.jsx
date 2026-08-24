@@ -35,6 +35,7 @@ export default function AvailabilityGrid({
   onSelectSlot,
   dateMeta = {},
   busyKeys = null,
+  hour12 = false,
 }) {
   const gridRef = useRef(null);
   const brushBarRef = useRef(null);
@@ -44,8 +45,8 @@ export default function AvailabilityGrid({
 
   const zoneList = zones && zones.length ? zones : ['UTC'];
   const labelSets = useMemo(
-    () => zoneList.map((z) => rowLabelsInZone(grid, z)),
-    [grid, zoneList.join('|')],
+    () => zoneList.map((z) => rowLabelsInZone(grid, z, hour12)),
+    [grid, zoneList.join('|'), hour12],
   );
   const primaryLabels = labelSets[0];
 
@@ -204,7 +205,7 @@ export default function AvailabilityGrid({
                         (busy ? ' busy' : '')
                       }
                       style={{ backgroundColor: c.bg }}
-                      aria-label={`${formatSlotInZone(key, zoneList[0])}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
+                      aria-label={`${formatSlotInZone(key, zoneList[0], { hour12 })}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -231,8 +232,8 @@ export default function AvailabilityGrid({
                           }
                         : undefined
                     }
-                    title={`${formatSlotInZone(key, zoneList[0])} — ${s.available} available`}
-                    aria-label={`${formatSlotInZone(key, zoneList[0])}: score ${s.score}, ${s.available} available`}
+                    title={`${formatSlotInZone(key, zoneList[0], { hour12 })} — ${s.available} available`}
+                    aria-label={`${formatSlotInZone(key, zoneList[0], { hour12 })}: score ${s.score}, ${s.available} available`}
                     onClick={() => onSelectSlot?.(key)}
                   >
                     {s.score ? String(s.score) : ''}

@@ -9,6 +9,7 @@ import TimezonePicker from './TimezonePicker.jsx';
 import { useEvent } from '../hooks.jsx';
 import { buildSlotGrid, formatSlotInZone, zoneLabelDrift } from '../lib/slots.js';
 import { detectZone, zoneLabel } from '../lib/timezones.js';
+import { loadHour12, storeHour12 } from '../lib/clockFormat.js';
 import { bestSlots, scoreSlots, slotBreakdown, questionTallies } from '../lib/aggregate.js';
 import { levelColor } from '../lib/levelColors.js';
 import { buildICS, googleCalUrl, outlookCalUrl } from '../lib/ics.js';
@@ -25,6 +26,11 @@ export default function ResultsPage() {
     }
   });
   const [extraZones, setExtraZones] = useState([]);
+  const [hour12, setHour12] = useState(loadHour12);
+  function chooseHour12(v) {
+    setHour12(v);
+    storeHour12(v);
+  }
 
   const event = data?.event;
   const levels = event?.preference_levels || [];
@@ -171,7 +177,7 @@ export default function ResultsPage() {
               )}
             </p>
             {!isDayMode && (
-              <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras />
+              <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras hour12={hour12} onHour12={chooseHour12} />
             )}
             {drift && (
               <div className="banner">
@@ -197,12 +203,13 @@ export default function ResultsPage() {
                 responses={responses}
                 selectedKey={selectedKey}
                 onSelectSlot={(k) => setSelectedKey(k === selectedKey ? null : k)}
+                hour12={hour12}
               />
             )}
             {detail && (
               <div className="slot-detail">
                 <h3>
-                  {formatSlotInZone(selectedKey, zone)}
+                  {formatSlotInZone(selectedKey, zone, { hour12 })}
                   {!isDayMode && ` (${zoneLabel(zone)})`}
                 </h3>
                 {levels
@@ -243,7 +250,7 @@ export default function ResultsPage() {
               <tbody>
                 {top.map((slot) => (
                   <tr key={slot.key}>
-                    <td>{formatSlotInZone(slot.key, zone)}</td>
+                    <td>{formatSlotInZone(slot.key, zone, { hour12 })}</td>
                     <td>{slot.score}</td>
                     <td>
                       {slot.available} of {responses.length}

@@ -109,7 +109,7 @@ export function buildSlotGrid(event, dates) {
  * the grid renders with a small gap, and label is "" for rows that would
  * repeat a non-hour time (we label every row; the UI decides density).
  */
-export function rowLabelsInZone(grid, zone) {
+export function rowLabelsInZone(grid, zone, hour12 = false) {
   const labels = [];
   for (let r = 0; r < grid.rowCount; r++) {
     const col = grid.columns.find((c) => c.keys[r] !== null);
@@ -120,7 +120,7 @@ export function rowLabelsInZone(grid, zone) {
     }
     const local = parseSlotKey(col.keys[r]).setZone(zone);
     labels.push({
-      label: local.toFormat('HH:mm'),
+      label: local.toFormat(hour12 ? 'h:mm a' : 'HH:mm'),
       hourline: local.minute === 0 && r > 0,
     });
   }
@@ -148,15 +148,17 @@ export function zoneLabelDrift(grid, zone) {
 }
 
 /**
- * Format a slot key for display, e.g. "Wed 3 Sep, 14:30". Day keys have no
- * time or zone, so they render as "Thu 3 Sep 2026".
+ * Format a slot key for display, e.g. "Wed 3 Sep, 14:30" — or, with
+ * opts.hour12, "Wed 3 Sep, 2:30 PM". Day keys have no time or zone, so they
+ * render as "Thu 3 Sep 2026" either way.
  */
 export function formatSlotInZone(key, zone, opts = {}) {
   if (isDayKey(key)) {
     return parseDayKey(key).toFormat('ccc d LLL yyyy');
   }
   const dt = parseSlotKey(key).setZone(zone);
-  return dt.toFormat(opts.timeOnly ? 'HH:mm' : 'ccc d LLL, HH:mm');
+  const time = opts.hour12 ? 'h:mm a' : 'HH:mm';
+  return dt.toFormat(opts.timeOnly ? time : `ccc d LLL, ${time}`);
 }
 
 /** Sort helper: slot keys are ISO-UTC so plain string sort is chronological. */
