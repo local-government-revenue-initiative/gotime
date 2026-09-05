@@ -6,10 +6,10 @@ needed to respond.
 **Live app:** https://gotime.evan-trowbridge.com
 (`its-go-time.vercel.app` still works, so links shared before the move don't break.)
 
-Organizers create an event (title, candidate dates, timeslot size, optional
-extra questions), share one link, and respondents paint the times that work
-for them using configurable preference levels (default: *Not available* /
-*If need be* / *Available*). The results page combines everyone's answers
+Organizers create an event (title, candidate dates or days of the week,
+timeslot size, optional extra questions), share one link, and respondents
+paint the times that work for them using configurable preference levels
+(default: *Not available* / *If need be* / *Available*). The results page combines everyone's answers
 into a heatmap, ranks the best times, and can
 generate a calendar invite (.ics) for the winning slot.
 
@@ -21,6 +21,9 @@ configured in the UI, using the Vercel + Supabase setup proven in
 ## Features
 
 **Organizers** (sign in with an email link — no password):
+- Three kinds of event: time slots on specific dates, whole days (a trip or
+  multi-day visit), or a recurring meeting where respondents mark time slots
+  on days of the week ("Tuesdays 10:00") rather than on dates
 - Multiple candidate dates, configurable daily time range and slot length
   (15/20/30/60 min, default 30)
 - Optional description and extra poll questions (choose-one, choose-several,
@@ -60,6 +63,12 @@ configured in the UI, using the Vercel + Supabase setup proven in
 - Every slot is stored as an absolute UTC instant; the grid renders in any
   IANA zone with one-tap chips for Toronto, London, Sierra Leone (GMT),
   Accra/Lagos (WAT), CET, Lusaka (CAT), Nairobi/Kampala (EAT)
+- Recurring-meeting slots are the exception: they are stored as a weekday
+  plus wall-clock time in the event's zone (`D2T10:00`), because a weekly
+  meeting keeps its local time through daylight-saving changes. Other zones
+  are shown using the current week's offsets, with a note that the local
+  time shifts by an hour when DST starts or ends in either zone; the
+  calendar invite carries a `TZID` and a weekly `RRULE`
 - Up to two extra zones can be shown side-by-side on the time axis
   (Google-Calendar style)
 - Daylight-saving transitions are handled explicitly (nonexistent slots become
@@ -70,7 +79,7 @@ configured in the UI, using the Vercel + Supabase setup proven in
 ```
 app/                     Vite + React 18 (plain JS), react-router, Luxon
   src/lib/               pure domain logic, unit-tested with Vitest:
-    slots.js             slot keys ("2026-09-03T13:30Z"), DST-safe grid math
+    slots.js             slot keys ("2026-09-03T13:30Z", "2026-09-03", "D2T10:00"), DST-safe grid math
     timezones.js         zone list/labels     aggregate.js  heatmap scoring
     ics.js               calendar invites     localIdentity.js  device continuity
     icsParse.js          reads a published calendar (busy overlay)

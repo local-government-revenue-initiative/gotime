@@ -85,7 +85,7 @@ export async function listMyEvents() {
   const rows = unwrap(
     await supabase
       .from('events')
-      .select('id, token, title, locked, archived, created_at, event_dates(date)')
+      .select('id, token, title, locked, archived, created_at, granularity, weekdays, event_dates(date)')
       .order('created_at', { ascending: false }),
   );
   return rows || [];
@@ -95,7 +95,9 @@ export async function listMyEvents() {
  * Create an event plus its dates and questions in one go.
  * settings: { title, description, timezone, slot_minutes, day_start,
  * day_end, preference_levels, responses_visible, anonymize_names,
- * allow_suggestions }; dates: ["yyyy-MM-dd"]; questions: [{type,label,options,required}]
+ * allow_suggestions, granularity, weekdays }; dates: ["yyyy-MM-dd"]
+ * (empty for recurring events, which use settings.weekdays instead);
+ * questions: [{type,label,options,required}]
  */
 export async function createEvent(userId, settings, dates, questions) {
   const supabase = await client();

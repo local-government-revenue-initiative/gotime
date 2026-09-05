@@ -6,6 +6,7 @@ import AuthPanel from './AuthPanel.jsx';
 import EventHeader from './EventHeader.jsx';
 import QuestionEditor, { parseOptionsText } from './QuestionEditor.jsx';
 import OrganizerSearch from './OrganizerSearch.jsx';
+import WeekdayPicker from './WeekdayPicker.jsx';
 import { useSession } from '../App.jsx';
 import { useEvent, useToast } from '../hooks.jsx';
 import {
@@ -21,7 +22,7 @@ import {
   deleteEvent,
 } from '../api.js';
 import { friendlyError } from '../supabaseClient.js';
-import { formatSlotInZone, sortSlotKeys } from '../lib/slots.js';
+import { formatSlotInZone, sortSlotKeys, normalizeWeekdays } from '../lib/slots.js';
 
 export default function ManagePage() {
   const { token } = useParams();
@@ -178,6 +179,16 @@ export default function ManagePage() {
         <SettingsForm event={event} busy={busy} onSave={(fields) => patch(fields, 'Settings saved.')} />
       </div>
 
+      {event.granularity === 'week' ? (
+        <div className="card">
+          <h2>Days of the week</h2>
+          <WeekdaySettings
+            event={event}
+            busy={busy}
+            onSave={(weekdays) => patch({ weekdays }, 'Days saved.')}
+          />
+        </div>
+      ) : (
       <div className="card">
         <h2>Dates</h2>
         <ul className="date-list">
@@ -214,6 +225,7 @@ export default function ManagePage() {
           </label>
         </div>
       </div>
+      )}
 
       <details className="section">
         <summary>
@@ -390,6 +402,35 @@ export default function ManagePage() {
   );
 }
 
+/**
+ * Which weekdays a recurring meeting can fall on. Removing a day keeps the
+ * availability people entered for it (stored keys are never deleted) but
+ * stops showing it, the same as removing a date from a dated event.
+ */
+function WeekdaySettings({ event, busy, onSave }) {
+  const [weekdays, setWeekdays] = useState(normalizeWeekdays(event.weekdays));
+  const saved = normalizeWeekdays(event.weekdays);
+  const changed = weekdays.join(',') !== saved.join(',');
+  return (
+    <div>
+      <p className="hint">
+        Respondents mark times on each of these days. Availability already entered for a day you
+        remove stays stored but is no longer shown.
+      </p>
+      <WeekdayPicker value={weekdays} onChange={setWeekdays} disabled={busy} />
+      <button
+        type="button"
+        className="btn btn-primary"
+        disabled={busy || !changed || weekdays.length === 0}
+        onClick={() => onSave(weekdays)}
+      >
+        Save days
+      </button>
+      {weekdays.length === 0 && <p className="hint">Keep at least one day.</p>}
+    </div>
+  );
+}
+
 function SettingsForm({ event, busy, onSave }) {
   const [title, setTitle] = useState(event.title);
   const [description, setDescription] = useState(event.description);
@@ -407,7 +448,7 @@ function SettingsForm({ event, busy, onSave }) {
           description: description.trim(),
           responses_visible: responsesVisible,
           anonymize_names: responsesVisible ? anonymize : false,
-          allow_suggestions: allowSuggestions,
+          allow_suggestions: event.granularity === 'week' ? false : allowSuggestions,
           notify_mode: notifyMode,
         });
       }}
@@ -444,17 +485,19 @@ function SettingsForm({ event, busy, onSave }) {
           </label>
         </div>
       )}
-      <div className="checkbox">
-        <input
-          id="st-suggest"
-          type="checkbox"
-          checked={allowSuggestions}
-          onChange={(e) => setAllowSuggestions(e.target.checked)}
-        />
-        <label htmlFor="st-suggest" style={{ margin: 0, fontWeight: 400 }}>
-          Let respondents suggest additional dates
-        </label>
-      </div>
+      {event.granularity !== 'week' && (
+        <div className="checkbox">
+          <input
+            id="st-suggest"
+            type="checkbox"
+            checked={allowSuggestions}
+            onChange={(e) => setAllowSuggestions(e.target.checked)}
+          />
+          <label htmlFor="st-suggest" style={{ margin: 0, fontWeight: 400 }}>
+            Let respondents suggest additional dates
+          </label>
+        </div>
+      )}
       <label htmlFor="st-notify">
         Email organizers when someone responds
         <select id="st-notify" value={notifyMode} onChange={(e) => setNotifyMode(e.target.value)}>
@@ -577,6 +620,7 @@ function downloadCsv(data) {
   const header = [
     'Name', 'Email', 'Updated',
     ...questions.map((q) => q.label),
+    // Week keys are already event-zone wall times, so they need no conversion.
     ...slotKeys.map((k) => formatSlotInZone(k, event.timezone)),
   ];
   const rows = responses.map((r) => [

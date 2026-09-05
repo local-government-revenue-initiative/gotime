@@ -87,9 +87,7 @@ export default function LandingPage() {
                       <Link to={`/e/${ev.token}/manage`}>{ev.title}</Link>
                       {ev.locked && <span className="badge badge-locked">Locked</span>}
                     </span>
-                    <span className="meta">
-                      {(ev.event_dates || []).length} date{(ev.event_dates || []).length === 1 ? '' : 's'}
-                    </span>
+                    <span className="meta">{whenSummary(ev)}</span>
                     <Link className="meta" to={`/e/${ev.token}`}>
                       respond
                     </Link>
@@ -117,9 +115,7 @@ export default function LandingPage() {
                     <Link to={`/e/${ev.token}/manage`}>{ev.title}</Link>
                     {ev.locked && <span className="badge badge-locked">Locked</span>}
                   </span>
-                  <span className="meta">
-                    {(ev.event_dates || []).length} date{(ev.event_dates || []).length === 1 ? '' : 's'}
-                  </span>
+                  <span className="meta">{whenSummary(ev)}</span>
                   <Link className="meta" to={`/e/${ev.token}/results`}>
                     results
                   </Link>
@@ -157,4 +153,14 @@ export default function LandingPage() {
       )}
     </Layout>
   );
+}
+
+/** "3 dates" for dated events, "weekly, 3 days" for recurring ones. */
+function whenSummary(ev) {
+  if (ev.granularity === 'week') {
+    const n = (ev.weekdays || []).length;
+    return `weekly, ${n} day${n === 1 ? '' : 's'}`;
+  }
+  const n = (ev.event_dates || []).length;
+  return `${n} date${n === 1 ? '' : 's'}`;
 }

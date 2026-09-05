@@ -4,6 +4,7 @@ import Layout from './Layout.jsx';
 import AuthPanel from './AuthPanel.jsx';
 import QuestionEditor, { parseOptionsText } from './QuestionEditor.jsx';
 import DateMultiPicker from './DateMultiPicker.jsx';
+import WeekdayPicker from './WeekdayPicker.jsx';
 import { useSession } from '../App.jsx';
 import { createEvent } from '../api.js';
 import { friendlyError } from '../supabaseClient.js';
@@ -31,6 +32,7 @@ export default function NewEventPage() {
   const [allowSuggestions, setAllowSuggestions] = useState(false);
   const [notifyMode, setNotifyMode] = useState('new');
   const [granularity, setGranularity] = useState('time');
+  const [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]);
   const [questions, setQuestions] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -38,8 +40,10 @@ export default function NewEventPage() {
   async function submit(e) {
     e.preventDefault();
     if (!title.trim()) return setError('Give the event a title.');
-    if (dates.length === 0) return setError('Add at least one candidate date.');
-    if (dayEnd <= dayStart) return setError('The daily end time must be after the start time.');
+    const isWeekly = granularity === 'week';
+    if (isWeekly && weekdays.length === 0) return setError('Pick at least one day of the week.');
+    if (!isWeekly && dates.length === 0) return setError('Add at least one candidate date.');
+    if (granularity !== 'day' && dayEnd <= dayStart) return setError('The daily end time must be after the start time.');
     const cleanLevels = levels.map((l) => l.trim()).filter(Boolean);
     if (cleanLevels.length < 2) return setError('Keep at least two preference levels.');
     const cleanQuestions = questions
@@ -62,11 +66,12 @@ export default function NewEventPage() {
           preference_levels: cleanLevels,
           responses_visible: responsesVisible,
           anonymize_names: responsesVisible ? anonymize : false,
-          allow_suggestions: allowSuggestions,
+          allow_suggestions: isWeekly ? false : allowSuggestions,
           notify_mode: notifyMode,
           granularity,
+          weekdays: isWeekly ? weekdays : [],
         },
-        dates,
+        isWeekly ? [] : dates,
         cleanQuestions,
       );
       navigate(`/e/${event.token}/manage`, { state: { created: true } });
@@ -125,7 +130,7 @@ export default function NewEventPage() {
         </div>
 
         <div className="card">
-          <h2>Time slot or a whole day?</h2>
+          <h2>Time slot, whole day, or recurring meeting?</h2>
           <div className="radio">
             <input
               type="radio"
@@ -157,35 +162,66 @@ export default function NewEventPage() {
               </span>
             </label>
           </div>
+          <div className="radio">
+            <input
+              type="radio"
+              id="gran-week"
+              name="granularity"
+              checked={granularity === 'week'}
+              onChange={() => setGranularity('week')}
+            />
+            <label htmlFor="gran-week" style={{ margin: 0, fontWeight: 400 }}>
+              A recurring meeting — the same slot every week
+              <span className="sub">
+                Respondents pick time slots on days of the week (e.g. Tuesdays 10:00–10:30)
+                rather than on specific dates.
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="card">
-          <h2>Potential Dates <span className="req">*</span></h2>
-          <p className="hint">
-            {granularity === 'day'
-              ? 'Add every day that could be part of the event — respondents will mark which of these work.'
-              : 'Click dates to add or remove them — you can also drag across several days.'}
-          </p>
-          <DateMultiPicker value={dates} onChange={setDates} />
-          {dates.length > 0 && (
-            <ul className="date-list">
-              {dates.map((d) => (
-                <li key={d}>
-                  {DateTime.fromISO(d).toFormat('ccc d LLL yyyy')}
-                  <button type="button" aria-label={`Remove ${d}`} onClick={() => setDates(dates.filter((x) => x !== d))}>
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {granularity === 'week' ? (
+            <>
+              <h2>Days of the week <span className="req">*</span></h2>
+              <p className="hint">
+                Pick the days the meeting could fall on — respondents will mark the times that
+                work for them on each.
+              </p>
+              <WeekdayPicker value={weekdays} onChange={setWeekdays} />
+            </>
+          ) : (
+            <>
+              <h2>Potential Dates <span className="req">*</span></h2>
+              <p className="hint">
+                {granularity === 'day'
+                  ? 'Add every day that could be part of the event — respondents will mark which of these work.'
+                  : 'Click dates to add or remove them — you can also drag across several days.'}
+              </p>
+              <DateMultiPicker value={dates} onChange={setDates} />
+              {dates.length > 0 && (
+                <ul className="date-list">
+                  {dates.map((d) => (
+                    <li key={d}>
+                      {DateTime.fromISO(d).toFormat('ccc d LLL yyyy')}
+                      <button type="button" aria-label={`Remove ${d}`} onClick={() => setDates(dates.filter((x) => x !== d))}>
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
-          {granularity === 'time' && (
+          {granularity !== 'day' && (
             <>
               <div style={{ margin: '12px 0 0' }}>
                 <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone for organizer</span>
                 <p className="hint" style={{ margin: '2px 0 6px' }}>
                   The daily range of available times (set below) is interpreted in this zone.
                   Respondents can view the grid in their own time zone.
+                  {granularity === 'week' &&
+                    ' A recurring meeting keeps its time in this zone through daylight-saving changes.'}
                 </p>
                 <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Commonly used time zones</p>
               </div>
@@ -224,7 +260,7 @@ export default function NewEventPage() {
           )}
         </div>
 
-        {granularity === 'time' && (
+        {granularity !== 'day' && (
           <details className="section">
             <summary>
               Times &amp; slot length
@@ -316,7 +352,7 @@ export default function NewEventPage() {
             Privacy &amp; options
             <span className="sub">
               {responsesVisible ? (anonymize ? 'responses visible, anonymized' : 'responses visible') : 'responses hidden'}
-              {allowSuggestions ? ', date suggestions on' : ''}
+              {allowSuggestions && granularity !== 'week' ? ', date suggestions on' : ''}
             </span>
           </summary>
           <div className="section-body">
@@ -348,18 +384,20 @@ export default function NewEventPage() {
                 </label>
               </div>
             )}
-            <div className="checkbox">
-              <input
-                id="ev-suggest"
-                type="checkbox"
-                checked={allowSuggestions}
-                onChange={(e) => setAllowSuggestions(e.target.checked)}
-              />
-              <label htmlFor="ev-suggest" style={{ margin: 0, fontWeight: 400 }}>
-                Let respondents suggest additional dates
-                <span className="sub">Suggestions wait for your approval before joining the grid.</span>
-              </label>
-            </div>
+            {granularity !== 'week' && (
+              <div className="checkbox">
+                <input
+                  id="ev-suggest"
+                  type="checkbox"
+                  checked={allowSuggestions}
+                  onChange={(e) => setAllowSuggestions(e.target.checked)}
+                />
+                <label htmlFor="ev-suggest" style={{ margin: 0, fontWeight: 400 }}>
+                  Let respondents suggest additional dates
+                  <span className="sub">Suggestions wait for your approval before joining the grid.</span>
+                </label>
+              </div>
+            )}
             <label htmlFor="ev-notify">
               Email organizers when someone responds
               <select id="ev-notify" value={notifyMode} onChange={(e) => setNotifyMode(e.target.value)}>

@@ -43,8 +43,11 @@ export default function ResultsPage() {
     [event, approvedDates],
   );
   const isDayMode = event?.granularity === 'day';
+  const isWeekMode = event?.granularity === 'week';
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
   const allResponses = data?.responses || [];
+  // Week keys are event-zone wall times; converting them needs the event zone.
+  const fmtOpts = { hour12, eventZone: event?.timezone, refWeek: grid?.refWeek };
 
   // Respondent filter: `included` is null for "everyone" (the default), or a
   // Set of response ids. All aggregates recompute from the subset.
@@ -95,6 +98,7 @@ export default function ResultsPage() {
       startKey: key,
       durationMinutes: event.slot_minutes,
       url: `${window.location.origin}/e/${event.token}`,
+      eventZone: event.timezone,
     };
   }
 
@@ -169,6 +173,7 @@ export default function ResultsPage() {
             <p className="hint">
               Darker shading = works for more people (score:{' '}
               {levels.map((l, i) => `${l} = ${i}`).join(', ')}). Tap a slot to see who can make it.
+              {isWeekMode && ' Each column is a day of the week — the winning slot repeats weekly.'}
               {included && (
                 <>
                   {' '}
@@ -181,8 +186,9 @@ export default function ResultsPage() {
             )}
             {drift && (
               <div className="banner">
-                A daylight-saving change falls between these dates, so times in{' '}
-                {zones.map(zoneLabel).join(' / ')} shift on some days. Hover a cell for exact times.
+                {isWeekMode
+                  ? `A daylight-saving change falls this week, so times in ${zones.map(zoneLabel).join(' / ')} differ between days. Hover a cell for exact times.`
+                  : `A daylight-saving change falls between these dates, so times in ${zones.map(zoneLabel).join(' / ')} shift on some days. Hover a cell for exact times.`}
               </div>
             )}
             {isDayMode ? (
@@ -209,7 +215,8 @@ export default function ResultsPage() {
             {detail && (
               <div className="slot-detail">
                 <h3>
-                  {formatSlotInZone(selectedKey, zone, { hour12 })}
+                  {isWeekMode && 'Every '}
+                  {formatSlotInZone(selectedKey, zone, fmtOpts)}
                   {!isDayMode && ` (${zoneLabel(zone)})`}
                 </h3>
                 {levels
@@ -241,7 +248,7 @@ export default function ResultsPage() {
             <table className="data-table best-times">
               <thead>
                 <tr>
-                  <th>{isDayMode ? 'Which day' : `When (${zoneLabel(zone)})`}</th>
+                  <th>{isDayMode ? 'Which day' : isWeekMode ? `Every week (${zoneLabel(zone)})` : `When (${zoneLabel(zone)})`}</th>
                   <th>Score</th>
                   <th>Can make it</th>
                   {data.is_organizer && <th></th>}
@@ -250,7 +257,7 @@ export default function ResultsPage() {
               <tbody>
                 {top.map((slot) => (
                   <tr key={slot.key}>
-                    <td>{formatSlotInZone(slot.key, zone, { hour12 })}</td>
+                    <td>{formatSlotInZone(slot.key, zone, fmtOpts)}</td>
                     <td>{slot.score}</td>
                     <td>
                       {slot.available} of {responses.length}

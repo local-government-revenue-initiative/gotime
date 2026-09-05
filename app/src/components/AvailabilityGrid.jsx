@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useLayoutEffect, useState } from 'react';
 import { DateTime } from 'luxon';
-import { rowLabelsInZone, formatSlotInZone } from '../lib/slots.js';
+import { rowLabelsInZone, formatSlotInZone, WEEKDAY_NAMES, WEEKDAY_SHORT } from '../lib/slots.js';
 import { zoneLabel } from '../lib/timezones.js';
 import { levelColor } from '../lib/levelColors.js';
 import { scoreSlots, maxScore } from '../lib/aggregate.js';
@@ -20,6 +20,9 @@ import { scoreSlots, maxScore } from '../lib/aggregate.js';
  * Shared props: grid (from buildSlotGrid), zones (1–3 display zones; extra
  * zones add label columns, Google-Calendar style), dateMeta {date ->
  * {suggested, approved}}.
+ *
+ * Week-granularity grids have weekday columns (col.weekday, no date); their
+ * keys are event-zone wall times, so labels go through the grid's zone.
  */
 export default function AvailabilityGrid({
   mode,
@@ -49,6 +52,8 @@ export default function AvailabilityGrid({
     [grid, zoneList.join('|'), hour12],
   );
   const primaryLabels = labelSets[0];
+  // Week keys need the event zone (and reference week) to show in a display zone.
+  const fmtOpts = { hour12, eventZone: grid.zone, refWeek: grid.refWeek };
 
   const scored = useMemo(
     () => (mode === 'heatmap' ? scoreSlots(grid.allKeys, responses || []) : null),
@@ -154,6 +159,14 @@ export default function AvailabilityGrid({
             </div>
           ))}
           {grid.columns.map((col) => {
+            if (col.weekday) {
+              return (
+                <div key={'dh-w' + col.weekday} className="dayhead" title={WEEKDAY_NAMES[col.weekday]}>
+                  {WEEKDAY_SHORT[col.weekday]}
+                  <span className="date">weekly</span>
+                </div>
+              );
+            }
             const d = DateTime.fromISO(col.date);
             const meta = dateMeta[col.date] || {};
             return (
@@ -205,7 +218,7 @@ export default function AvailabilityGrid({
                         (busy ? ' busy' : '')
                       }
                       style={{ backgroundColor: c.bg }}
-                      aria-label={`${formatSlotInZone(key, zoneList[0], { hour12 })}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
+                      aria-label={`${formatSlotInZone(key, zoneList[0], fmtOpts)}: ${levels[v]}${busy ? ' (busy in your calendar)' : ''}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -232,8 +245,8 @@ export default function AvailabilityGrid({
                           }
                         : undefined
                     }
-                    title={`${formatSlotInZone(key, zoneList[0], { hour12 })} — ${s.available} available`}
-                    aria-label={`${formatSlotInZone(key, zoneList[0], { hour12 })}: score ${s.score}, ${s.available} available`}
+                    title={`${formatSlotInZone(key, zoneList[0], fmtOpts)} — ${s.available} available`}
+                    aria-label={`${formatSlotInZone(key, zoneList[0], fmtOpts)}: score ${s.score}, ${s.available} available`}
                     onClick={() => onSelectSlot?.(key)}
                   >
                     {s.score ? String(s.score) : ''}

@@ -69,15 +69,16 @@ export default function RespondPage() {
     [event, approvedDates],
   );
   const isDayMode = event?.granularity === 'day';
+  const isWeekMode = event?.granularity === 'week';
   const zones = [zone, ...extraZones.filter((z) => z !== zone)];
 
   // "Show my busy times": the signed-in user's own published calendar,
   // overlaid on the grid as a visual aid. Never saved, never shown to others.
   const [busyRanges, setBusyRanges] = useState(null);
   const busyKeys = useMemo(() => {
-    if (!busyRanges || !grid || isDayMode) return null;
+    if (!busyRanges || !grid || event.granularity !== 'time') return null;
     return busySlotKeys(grid.allKeys, busyRanges, event.slot_minutes, parseSlotKey);
-  }, [busyRanges, grid, isDayMode, event?.slot_minutes]);
+  }, [busyRanges, grid, event?.granularity, event?.slot_minutes]);
   const drift = useMemo(
     () => (grid ? zones.some((z) => zoneLabelDrift(grid, z)) : false),
     [grid, zones.join('|')],
@@ -427,15 +428,17 @@ export default function RespondPage() {
           Pick an option below, then tap or drag across the{' '}
           {isDayMode ? 'calendar' : 'grid'}. Everything starts as “{levels[0]}”, so you only
           select the {isDayMode ? 'days' : 'times'} that could work.
+          {isWeekMode &&
+            ' This is a recurring meeting: each column is a day of the week, so mark the times you could keep free every week.'}
         </p>
         {!isDayMode && (
           <TimezonePicker zone={zone} onZone={setZone} extras={extraZones} onExtras={setExtraZones} allowExtras hour12={hour12} onHour12={chooseHour12} />
         )}
         {drift && (
           <div className="banner">
-            A daylight-saving change falls between these dates, so times in{' '}
-            {zones.map(zoneLabel).join(' / ')} shift on some days. Row labels follow the first
-            date; hover or long-press a cell for its exact time.
+            {isWeekMode
+              ? `A daylight-saving change falls this week, so times in ${zones.map(zoneLabel).join(' / ')} differ between days. Row labels follow the first day; hover or long-press a cell for its exact time.`
+              : `A daylight-saving change falls between these dates, so times in ${zones.map(zoneLabel).join(' / ')} shift on some days. Row labels follow the first date; hover or long-press a cell for its exact time.`}
           </div>
         )}
         {event.locked ? (
@@ -455,7 +458,7 @@ export default function RespondPage() {
           />
         ) : (
           <>
-            {SHOW_CALENDAR_OVERLAY && session && (
+            {SHOW_CALENDAR_OVERLAY && session && !isWeekMode && (
               <MyCalendar
                 grid={grid}
                 onBusy={setBusyRanges}
@@ -477,6 +480,9 @@ export default function RespondPage() {
             />
             <p className="hint">
               Times shown in {zoneLabel(zone)}. The event’s own time zone is {event.timezone}.
+              {isWeekMode &&
+                zone !== event.timezone &&
+                ' The meeting keeps its time in the event’s zone, so when daylight-saving time starts or ends in either zone your local time shifts by an hour; times here use this week’s clocks.'}
               {busyKeys && busyKeys.size > 0 && (
                 <>
                   {' '}
@@ -506,7 +512,7 @@ export default function RespondPage() {
         </div>
       )}
 
-      {event.allow_suggestions && !event.locked && (
+      {event.allow_suggestions && !event.locked && !isWeekMode && (
         <details className="section">
           <summary>
             Suggest another date <span className="sub">propose a date the organizer didn’t list</span>

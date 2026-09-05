@@ -10,6 +10,13 @@ import {
   sortSlotKeys,
   dayKey,
   isDayKey,
+  weekKey,
+  parseWeekKey,
+  isWeekKey,
+  normalizeWeekdays,
+  weekKeyToInstant,
+  nextOccurrence,
+  currentWeekStart,
 } from './slots.js';
 import { DateTime } from 'luxon';
 
@@ -191,5 +198,103 @@ describe('day granularity', () => {
       ['2026-09-03'],
     );
     expect(grid.rowCount).toBe(1);
+  });
+});
+
+describe('week granularity (recurring meetings)', () => {
+  // Monday 7 September 2026, 00:00 in London (BST, UTC+1).
+  const refWeek = DateTime.fromISO('2026-09-07T00:00', { zone: 'Europe/London' });
+  const weekEvent = {
+    granularity: 'week',
+    timezone: 'Europe/London',
+    slot_minutes: 30,
+    day_start: '09:00',
+    day_end: '10:00',
+    weekdays: [3, 1, 1],
+  };
+
+  it('weekKey / parseWeekKey / isWeekKey round-trip', () => {
+    expect(weekKey(2, '10:00')).toBe('D2T10:00');
+    expect(parseWeekKey('D2T10:00')).toEqual({ weekday: 2, time: '10:00', hour: 10, minute: 0 });
+    expect(isWeekKey('D2T10:00')).toBe(true);
+    expect(isWeekKey('2026-09-03T13:30Z')).toBe(false);
+    expect(isWeekKey('2026-09-03')).toBe(false);
+    expect(parseWeekKey('D8T10:00')).toBeNull();
+  });
+
+  it('normalizeWeekdays de-duplicates, drops junk and sorts Monday first', () => {
+    expect(normalizeWeekdays([5, '1', 1, 9, 0, 3.5, 3])).toEqual([1, 3, 5]);
+    expect(normalizeWeekdays(undefined)).toEqual([]);
+  });
+
+  it('builds one column per weekday with wall-clock keys and ignores dates', () => {
+    const grid = buildSlotGrid(weekEvent, ['2026-09-03'], { refWeek });
+    expect(grid.rowCount).toBe(2);
+    expect(grid.slotMinutes).toBe(30);
+    expect(grid.columns.map((c) => c.weekday)).toEqual([1, 3]);
+    expect(grid.columns.every((c) => c.date === null)).toBe(true);
+    expect(grid.columns[0].keys).toEqual(['D1T09:00', 'D1T09:30']);
+    expect(grid.columns[1].keys).toEqual(['D3T09:00', 'D3T09:30']);
+    expect(grid.allKeys).toEqual(['D1T09:00', 'D1T09:30', 'D3T09:00', 'D3T09:30']);
+    expect(grid.zone).toBe('Europe/London');
+    expect(grid.refWeek).toBe(refWeek);
+  });
+
+  it('keys sort chronologically as plain strings', () => {
+    expect(sortSlotKeys(['D3T09:00', 'D1T17:30', 'D1T09:00'])).toEqual(['D1T09:00', 'D1T17:30', 'D3T09:00']);
+  });
+
+  it('labels rows in the event zone and in other zones via the reference week', () => {
+    const grid = buildSlotGrid(weekEvent, [], { refWeek });
+    expect(rowLabelsInZone(grid, 'Europe/London').map((l) => l.label)).toEqual(['09:00', '09:30']);
+    expect(rowLabelsInZone(grid, 'America/Toronto').map((l) => l.label)).toEqual(['04:00', '04:30']);
+    expect(rowLabelsInZone(grid, 'Africa/Windhoek', true).map((l) => l.label)).toEqual(['10:00 AM', '10:30 AM']);
+    expect(rowLabelsInZone(grid, 'Europe/London')[0].hourline).toBe(false);
+  });
+
+  it('reports no drift within a plain week and drift when DST changes mid-week', () => {
+    const grid = buildSlotGrid(weekEvent, [], { refWeek });
+    expect(zoneLabelDrift(grid, 'America/Toronto')).toBe(false);
+    // Week of 26 Oct 2026: London fell back on Sunday 25 Oct, Toronto falls
+    // back on Sunday 1 Nov — so Mon and Sun differ by an hour in Toronto.
+    const dstWeek = DateTime.fromISO('2026-10-26T00:00', { zone: 'Europe/London' });
+    const sunGrid = buildSlotGrid({ ...weekEvent, weekdays: [1, 7] }, [], { refWeek: dstWeek });
+    expect(zoneLabelDrift(sunGrid, 'Europe/London')).toBe(false);
+    expect(zoneLabelDrift(sunGrid, 'America/Toronto')).toBe(true);
+  });
+
+  it('weekKeyToInstant places the key in the reference week in the event zone', () => {
+    const dt = weekKeyToInstant('D3T09:30', 'Europe/London', refWeek);
+    expect(dt.toISO()).toBe('2026-09-09T09:30:00.000+01:00');
+  });
+
+  it('nextOccurrence finds the next time the slot comes round', () => {
+    const from = DateTime.fromISO('2026-09-09T09:31', { zone: 'Europe/London' }); // Wed, just after
+    expect(nextOccurrence('D3T09:30', 'Europe/London', from).toISO()).toBe('2026-09-16T09:30:00.000+01:00');
+    expect(nextOccurrence('D3T09:30', 'Europe/London', from.minus({ minutes: 2 })).toISO()).toBe(
+      '2026-09-09T09:30:00.000+01:00',
+    );
+    // Across the fall-back change the wall time holds (09:30 GMT, not 08:30).
+    const late = DateTime.fromISO('2026-10-24T12:00', { zone: 'Europe/London' });
+    expect(nextOccurrence('D3T09:30', 'Europe/London', late).toISO()).toBe('2026-10-28T09:30:00.000+00:00');
+  });
+
+  it('formats week keys with the weekday name, converting when given the event zone', () => {
+    expect(formatSlotInZone('D2T10:00', 'America/Toronto')).toBe('Tuesday, 10:00');
+    expect(formatSlotInZone('D2T10:00', 'America/Toronto', { hour12: true })).toBe('Tuesday, 10:00 AM');
+    expect(formatSlotInZone('D2T10:00', 'UTC', { timeOnly: true })).toBe('10:00');
+    expect(
+      formatSlotInZone('D2T10:00', 'America/Toronto', { eventZone: 'Europe/London', refWeek }),
+    ).toBe('Tuesday, 05:00');
+    // Conversion can move the weekday: Monday 01:00 in Nairobi is Sunday in Toronto.
+    expect(
+      formatSlotInZone('D1T01:00', 'America/Toronto', { eventZone: 'Africa/Nairobi', refWeek, hour12: true }),
+    ).toBe('Sunday, 6:00 PM');
+  });
+
+  it('currentWeekStart is the Monday of the week in that zone', () => {
+    const now = DateTime.fromISO('2026-09-10T12:00Z');
+    expect(currentWeekStart('Europe/London', now).toISO()).toBe('2026-09-07T00:00:00.000+01:00');
+    expect(currentWeekStart('Pacific/Auckland', now).toISO()).toBe('2026-09-07T00:00:00.000+12:00');
   });
 });
