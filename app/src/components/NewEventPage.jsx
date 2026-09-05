@@ -232,8 +232,10 @@ export default function NewEventPage() {
             <div className="section-body">
               <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone</span>
               <p className="hint" style={{ margin: '2px 0 6px' }}>
-                Respondents can view the grid in their own time zone.
+                Specify time zone you&rsquo;re using. Respondents can customize to their own time
+                zone.
               </p>
+              <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Most common time zones:</p>
               <div className="chip-row">
                 {QUICK_ZONES.map((q) => (
                   <button

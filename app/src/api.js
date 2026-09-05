@@ -8,6 +8,7 @@
  */
 
 import { getSupabase } from './supabaseClient.js';
+import { retryClockSkew } from './lib/retry.js';
 
 async function client() {
   const supabase = await getSupabase();
@@ -82,11 +83,14 @@ export async function signOut() {
 /** Events where the signed-in user is an organizer, newest first. */
 export async function listMyEvents() {
   const supabase = await client();
-  const rows = unwrap(
-    await supabase
-      .from('events')
-      .select('id, token, title, locked, archived, created_at, granularity, weekdays, event_dates(date)')
-      .order('created_at', { ascending: false }),
+  // First request after a token refresh; see lib/retry.js for why it retries.
+  const rows = await retryClockSkew(async () =>
+    unwrap(
+      await supabase
+        .from('events')
+        .select('id, token, title, locked, archived, created_at, granularity, weekdays, event_dates(date)')
+        .order('created_at', { ascending: false }),
+    ),
   );
   return rows || [];
 }
@@ -241,7 +245,7 @@ export async function removeOrganizer(eventId, userId) {
  */
 export async function listMyResponses() {
   const supabase = await client();
-  return unwrap(await supabase.rpc('list_my_responses')) || [];
+  return (await retryClockSkew(async () => unwrap(await supabase.rpc('list_my_responses')))) || [];
 }
 
 export async function getMyProfile() {

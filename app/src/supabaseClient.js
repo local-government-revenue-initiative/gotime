@@ -68,6 +68,8 @@ export function friendlyError(error) {
     return 'This event could not be found — check that the link is complete.';
   if (/invalid or has expired|otp_expired|token has expired/i.test(message))
     return 'This sign-in link has expired or was already used — they work once, for an hour. Request a new one.';
+  if (/issued at future/i.test(message))
+    return 'The server was briefly out of step with itself. Reload the page and it will be fine.';
   if (/not_organizer/i.test(message))
     return 'Only an organizer of this event can do that.';
   // Calendar overlay (fetch-ics edge function)
