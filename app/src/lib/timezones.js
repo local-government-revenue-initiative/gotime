@@ -16,6 +16,7 @@ export const QUICK_ZONES = [
   { zone: 'Europe/Paris', label: 'CET' },
   { zone: 'Africa/Lusaka', label: 'Lusaka (CAT)' },
   { zone: 'Africa/Nairobi', label: 'Nairobi/Kampala (EAT)' },
+  { zone: 'UTC', label: 'UTC' },
 ];
 
 /**

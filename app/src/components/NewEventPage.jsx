@@ -8,7 +8,13 @@ import WeekdayPicker from './WeekdayPicker.jsx';
 import { useSession } from '../App.jsx';
 import { createEvent } from '../api.js';
 import { friendlyError } from '../supabaseClient.js';
-import { QUICK_ZONES, allZones, detectZone, displayZoneName } from '../lib/timezones.js';
+import {
+  QUICK_ZONES,
+  allZones,
+  detectZone,
+  displayZoneName,
+  zoneLabel,
+} from '../lib/timezones.js';
 import { useToast } from '../hooks.jsx';
 import { DateTime } from 'luxon';
 
@@ -213,18 +219,21 @@ export default function NewEventPage() {
               )}
             </>
           )}
-          {granularity !== 'day' && (
-            <>
-              <div style={{ margin: '12px 0 0' }}>
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone for organizer</span>
-                <p className="hint" style={{ margin: '2px 0 6px' }}>
-                  The daily range of available times (set below) is interpreted in this zone.
-                  Respondents can view the grid in their own time zone.
-                  {granularity === 'week' &&
-                    ' A recurring meeting keeps its time in this zone through daylight-saving changes.'}
-                </p>
-                <p className="hint" style={{ fontWeight: 600, margin: '6px 0 2px' }}>Commonly used time zones</p>
-              </div>
+        </div>
+
+        {granularity !== 'day' && (
+          <details className="section">
+            <summary>
+              Times &amp; slot length
+              <span className="sub">
+                {dayStart}–{dayEnd} {zoneLabel(timezone)}, {slotMinutes}-minute slots
+              </span>
+            </summary>
+            <div className="section-body">
+              <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Time zone</span>
+              <p className="hint" style={{ margin: '2px 0 6px' }}>
+                Respondents can view the grid in their own time zone.
+              </p>
               <div className="chip-row">
                 {QUICK_ZONES.map((q) => (
                   <button
@@ -238,7 +247,7 @@ export default function NewEventPage() {
                   </button>
                 ))}
               </div>
-              <label htmlFor="ev-tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 0' }}>
+              <label htmlFor="ev-tz-select" className="hint" style={{ fontWeight: 600, margin: '8px 0 12px' }}>
                 Full time zone list
                 <select
                   id="ev-tz-select"
@@ -256,17 +265,11 @@ export default function NewEventPage() {
                   ))}
                 </select>
               </label>
-            </>
-          )}
-        </div>
-
-        {granularity !== 'day' && (
-          <details className="section">
-            <summary>
-              Times &amp; slot length
-              <span className="sub">{dayStart}–{dayEnd}, {slotMinutes}-minute slots</span>
-            </summary>
-            <div className="section-body">
+              {granularity === 'week' && (
+                <p className="hint" style={{ margin: '0 0 12px' }}>
+                  A recurring meeting keeps its time in this zone through daylight-saving changes.
+                </p>
+              )}
               <label htmlFor="ev-start">
                 Daily start time
                 <input id="ev-start" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
